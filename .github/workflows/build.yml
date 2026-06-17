@@ -50,8 +50,10 @@ jobs:
       - name: Sign IPA
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
+          FASTLANE_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           FASTLANE_SKIP_UPDATE_CHECK: "1"
+          FASTLANE_DONT_STORE_PASSWORD: "1"
         run: fastlane sign
 
       - name: Upload signed IPA
