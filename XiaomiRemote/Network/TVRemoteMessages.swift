@@ -76,7 +76,7 @@ struct IncomingMessage {
         var nested = payload.dropFirst()
         guard !nested.isEmpty, nested[nested.startIndex] == 0x08 else { return 0 }
         nested = nested.dropFirst()
-        var offset = nested.startIndex
+        let offset = nested.startIndex
         let asData = Data(nested)
         var idx = offset - asData.startIndex
         return Data.decodeVarint(from: asData, at: &idx) ?? 0

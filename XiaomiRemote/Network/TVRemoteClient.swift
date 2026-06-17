@@ -10,9 +10,9 @@ private func loadTVIdentity() -> SecIdentity? {
     guard SecPKCS12Import(data as CFData, options as CFDictionary, &items) == errSecSuccess,
           let arr = items as? [[String: Any]],
           let first = arr.first,
-          let identity = first[kSecImportItemIdentity as String] as? SecIdentity
+          let raw = first[kSecImportItemIdentity as String]
     else { return nil }
-    return identity
+    return (raw as! SecIdentity)
 }
 
 @MainActor
@@ -113,7 +113,7 @@ class TVRemoteClient: ObservableObject {
                 }
             }
             if !isComplete && error == nil {
-                self.receiveLoop()
+                Task { @MainActor in self.receiveLoop() }
             }
         }
     }
