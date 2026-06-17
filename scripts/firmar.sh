@@ -46,6 +46,41 @@ green "iPhone detectado: $UDID"
 
 export SIDELOADER_ANISETTE_SERVER="http://127.0.0.1:${ANISETTE_PORT}"
 
+# 2.5) Parchear __LINKEDIT: en iOS 26/27 beta el dyld exige vmsize >= filesize.
+#      El binario sin firmar deja poco margen y, al añadir Sideloader la firma,
+#      filesize se pasa de vmsize y dyld mata la app al arrancar ("segment
+#      '__LINKEDIT' filesize exceeds vmsize"). Agrandamos vmsize antes de firmar.
+info "Parcheando __LINKEDIT (margen para la firma)..."
+WORK=$(mktemp -d)
+( cd "$WORK" && unzip -oq "$IPA" )
+APPBIN=$(find "$WORK/Payload" -maxdepth 2 -type f -path '*.app/*' \
+            ! -name '*.*' -perm -u+x | head -1)
+if [ -n "$APPBIN" ] && python3 - "$APPBIN" <<'PY'
+import struct,sys
+p=sys.argv[1]; d=bytearray(open(p,'rb').read())
+def u32(o): return struct.unpack_from('<I',d,o)[0]
+if u32(0)!=0xfeedfacf: sys.exit(0)        # solo Mach-O arm64 thin
+ncmds=u32(16); off=32; TARGET=0x40000
+for _ in range(ncmds):
+    cmd=u32(off); csize=u32(off+4)
+    if cmd==0x19 and bytes(d[off+8:off+24]).split(b'\0')[0]==b'__LINKEDIT':
+        vm=struct.unpack_from('<Q',d,off+32)[0]; fs=struct.unpack_from('<Q',d,off+48)[0]
+        newvm=max(TARGET, (fs+0x20000+0x3fff)&~0x3fff)
+        if vm<newvm:
+            struct.pack_into('<Q',d,off+32,newvm); open(p,'wb').write(d)
+            print("  __LINKEDIT vmsize %#x -> %#x"%(vm,newvm))
+        break
+    off+=csize
+PY
+then
+    PATCHED="$WORK/patched.ipa"
+    ( cd "$WORK" && zip -qr "$PATCHED" Payload )
+    IPA="$PATCHED"
+    green "IPA parcheado listo."
+else
+    info "(no se pudo parchear, sigo con el IPA original)"
+fi
+
 # 3) Reintentar instalación: sideloader pide Apple ID/contraseña/2FA por terminal.
 #    El login da -22406 de forma aleatoria; reintentamos hasta que entra.
 info "Sideloader pedirá tu Apple ID, contraseña y (si toca) el código 2FA del iPhone."
