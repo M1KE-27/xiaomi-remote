@@ -31,8 +31,10 @@ jobs:
             -destination "generic/platform=iOS" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            | xcpretty || true
+            CODE_SIGN_IDENTITY=""
+
+      - name: Debug archive structure
+        run: find ${{ github.workspace }}/build/XiaomiRemote.xcarchive -type f 2>/dev/null | head -30 || echo "Archive not found"
 
       - name: Package unsigned IPA
         run: |
