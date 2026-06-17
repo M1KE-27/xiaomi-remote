@@ -19,6 +19,10 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
+      - name: Inject TV certificate
+        run: |
+          echo "${{ secrets.TV_P12_BASE64 }}" | base64 --decode > XiaomiRemote/tv_identity.p12
+
       - name: Build (unsigned)
         run: |
           xcodebuild archive \

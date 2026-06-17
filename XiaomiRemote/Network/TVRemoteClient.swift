@@ -1,5 +1,19 @@
 import Foundation
 import Network
+import Security
+
+private func loadTVIdentity() -> SecIdentity? {
+    guard let url = Bundle.main.url(forResource: "tv_identity", withExtension: "p12"),
+          let data = try? Data(contentsOf: url) else { return nil }
+    let options: [String: Any] = [kSecImportExportPassphrase as String: "xiaomiremote"]
+    var items: CFArray?
+    guard SecPKCS12Import(data as CFData, options as CFDictionary, &items) == errSecSuccess,
+          let arr = items as? [[String: Any]],
+          let first = arr.first,
+          let identity = first[kSecImportItemIdentity as String] as? SecIdentity
+    else { return nil }
+    return identity
+}
 
 @MainActor
 class TVRemoteClient: ObservableObject {
@@ -24,6 +38,11 @@ class TVRemoteClient: ObservableObject {
     func connect() {
         state = .connecting
         let tlsOptions = NWProtocolTLS.Options()
+
+        if let identity = loadTVIdentity() {
+            let secIdentity = sec_identity_create(identity)!
+            sec_protocol_options_set_local_identity(tlsOptions.securityProtocolOptions, secIdentity)
+        }
 
         sec_protocol_options_set_verify_block(
             tlsOptions.securityProtocolOptions,
