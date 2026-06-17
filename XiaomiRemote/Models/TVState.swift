@@ -44,6 +44,16 @@ class TVState: ObservableObject {
         }
     }
 
+    /// Used at launch: only reconnects silently if already paired. Never starts
+    /// pairing on its own (that must be a deliberate user action). Returns true
+    /// if a remote connection was started.
+    @discardableResult
+    func connectIfPaired() -> Bool {
+        guard !tvHost.isEmpty, isPaired(tvHost) else { return false }
+        openRemote()
+        return true
+    }
+
     func startPairing() {
         guard !tvHost.isEmpty else { return }
         pairingCode = ""

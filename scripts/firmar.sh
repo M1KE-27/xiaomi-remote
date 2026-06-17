@@ -44,37 +44,18 @@ UDID=$(idevice_id -l 2>/dev/null | head -1)
 [ -n "$UDID" ] || { red "No se detecta ningún iPhone por USB"; exit 1; }
 green "iPhone detectado: $UDID"
 
-# 3) Pedir la contraseña una sola vez (contraseña Apple + código 2FA pegados si toca)
-printf "Contraseña de Apple ID (%s): " "$APPLE_ID"
-read -rs PASS; echo
 export SIDELOADER_ANISETTE_SERVER="http://127.0.0.1:${ANISETTE_PORT}"
 
-# 4) Reintentar instalación: el login da -22406 de forma aleatoria.
-#    Alimentamos Apple ID + contraseña por stdin para no reteclear.
-attempt() {  # $1 = código 2FA opcional
-    if [ -n "${1:-}" ]; then
-        printf '%s\n%s\n%s\n' "$APPLE_ID" "$PASS" "$1"
-    else
-        printf '%s\n%s\n' "$APPLE_ID" "$PASS"
-    fi | "$SIDELOADER" install --udid "$UDID" "$IPA" -i 2>&1 | tee /dev/tty
-}
-
+# 3) Reintentar instalación: sideloader pide Apple ID/contraseña/2FA por terminal.
+#    El login da -22406 de forma aleatoria; reintentamos hasta que entra.
+info "Sideloader pedirá tu Apple ID, contraseña y (si toca) el código 2FA del iPhone."
 for i in $(seq 1 "$RETRIES"); do
     info "=== Intento $i/$RETRIES ==="
-    OUT=$(attempt "")
-    if echo "$OUT" | grep -q "Done!"; then
+    if "$SIDELOADER" install --udid "$UDID" "$IPA" -i; then
         green "¡Instalado! Confía en el perfil en Ajustes › General › VPN y gestión de dispositivos."
         exit 0
     fi
-    if echo "$OUT" | grep -qi "code has been sent"; then
-        printf "Introduce el código 2FA que ha llegado al iPhone: "
-        read -r CODE
-        OUT=$(attempt "$CODE")
-        if echo "$OUT" | grep -q "Done!"; then
-            green "¡Instalado! Confía en el perfil en Ajustes › General › VPN y gestión de dispositivos."
-            exit 0
-        fi
-    fi
+    info "Reintentando en 4s (el fallo de login suele ser aleatorio)..."
     sleep 4
 done
 

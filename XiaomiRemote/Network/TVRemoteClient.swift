@@ -26,8 +26,7 @@ class TVRemoteClient: ObservableObject {
         state = .connecting
         let tlsOptions = NWProtocolTLS.Options()
 
-        if let identity = TVIdentity.load() {
-            let secIdentity = sec_identity_create(identity)!
+        if let identity = TVIdentity.load(), let secIdentity = sec_identity_create(identity) {
             sec_protocol_options_set_local_identity(tlsOptions.securityProtocolOptions, secIdentity)
         }
 

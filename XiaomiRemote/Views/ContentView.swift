@@ -26,14 +26,9 @@ struct ContentView: View {
                 .interactiveDismissDisabled(true)
         }
         .onAppear {
-            // Reconnect silently only if this TV is already paired; otherwise
-            // send the user to settings to discover / pair.
-            if !tv.tvHost.isEmpty {
-                tv.connect()
-                if !tv.isConnected && !tv.showPairing {
-                    selectedTab = 1
-                }
-            } else {
+            // Reconnect silently only if this TV is already paired; never start
+            // pairing automatically. If not paired, land on Ajustes.
+            if !tv.connectIfPaired() {
                 selectedTab = 1
             }
         }

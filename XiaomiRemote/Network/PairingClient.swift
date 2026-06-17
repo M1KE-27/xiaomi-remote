@@ -55,7 +55,10 @@ final class PairingClient: ObservableObject {
         clientKey = parts
 
         let tlsOptions = NWProtocolTLS.Options()
-        let secIdentity = sec_identity_create(identity)!
+        guard let secIdentity = sec_identity_create(identity) else {
+            state = .failed("Identidad TLS inválida")
+            return
+        }
         sec_protocol_options_set_local_identity(tlsOptions.securityProtocolOptions, secIdentity)
         sec_protocol_options_set_min_tls_protocol_version(tlsOptions.securityProtocolOptions, .TLSv12)
 
