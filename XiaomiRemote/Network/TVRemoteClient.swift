@@ -73,8 +73,8 @@ class TVRemoteClient: ObservableObject {
         switch nwState {
         case .ready:
             state = .connected
-            send(TVMessage.configureRequest())
-            send(TVMessage.setActiveRequest())
+            // El handshake lo inicia el TV: nos manda remote_configure y
+            // respondemos en processBuffer(). No enviamos nada proactivamente.
             receiveLoop()
         case .failed(let error):
             state = .failed(error.localizedDescription)
@@ -107,7 +107,11 @@ class TVRemoteClient: ObservableObject {
     private func processBuffer() {
         while let payload = Data.nextFrame(from: &receiveBuffer) {
             let msg = IncomingMessage(payload: payload)
-            if msg.isPingRequest {
+            if msg.isConfigureRequest {
+                // El TV pide configuración -> respondemos y activamos la sesión.
+                send(TVMessage.configureResponse())
+                send(TVMessage.setActive())
+            } else if msg.isPingRequest {
                 send(TVMessage.pingResponse(val1: msg.pingVal1))
             }
         }
