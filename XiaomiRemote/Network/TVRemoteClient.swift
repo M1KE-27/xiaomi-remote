@@ -2,19 +2,6 @@ import Foundation
 import Network
 import Security
 
-private func loadTVIdentity() -> SecIdentity? {
-    guard let url = Bundle.main.url(forResource: "tv_identity", withExtension: "p12"),
-          let data = try? Data(contentsOf: url) else { return nil }
-    let options: [String: Any] = [kSecImportExportPassphrase as String: "xiaomiremote"]
-    var items: CFArray?
-    guard SecPKCS12Import(data as CFData, options as CFDictionary, &items) == errSecSuccess,
-          let arr = items as? [[String: Any]],
-          let first = arr.first,
-          let raw = first[kSecImportItemIdentity as String]
-    else { return nil }
-    return (raw as! SecIdentity)
-}
-
 @MainActor
 class TVRemoteClient: ObservableObject {
     @Published var state: ConnectionState = .disconnected
@@ -39,7 +26,7 @@ class TVRemoteClient: ObservableObject {
         state = .connecting
         let tlsOptions = NWProtocolTLS.Options()
 
-        if let identity = loadTVIdentity() {
+        if let identity = TVIdentity.load() {
             let secIdentity = sec_identity_create(identity)!
             sec_protocol_options_set_local_identity(tlsOptions.securityProtocolOptions, secIdentity)
         }
@@ -119,14 +106,9 @@ class TVRemoteClient: ObservableObject {
     }
 
     private func processBuffer() {
-        while receiveBuffer.count >= 2 {
-            let length = Int(receiveBuffer[0]) << 8 | Int(receiveBuffer[1])
-            guard receiveBuffer.count >= 2 + length else { break }
-
-            let messageData = receiveBuffer.subdata(in: 0..<(2 + length))
-            receiveBuffer.removeSubrange(0..<(2 + length))
-
-            if let msg = IncomingMessage.parse(from: messageData), msg.isPingRequest {
+        while let payload = Data.nextFrame(from: &receiveBuffer) {
+            let msg = IncomingMessage(payload: payload)
+            if msg.isPingRequest {
                 send(TVMessage.pingResponse(val1: msg.pingVal1))
             }
         }

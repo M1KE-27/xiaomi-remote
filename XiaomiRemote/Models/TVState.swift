@@ -3,13 +3,25 @@ import Combine
 
 @MainActor
 class TVState: ObservableObject {
-    @Published var tvHost: String = UserDefaults.standard.string(forKey: "tvHost") ?? ""
-    @Published var client: TVRemoteClient?
-    @Published var showPairing = false
+    static let defaultHost = "192.168.3.17"
 
-    var isConnected: Bool {
-        client?.state == .connected
+    @Published var tvHost: String = UserDefaults.standard.string(forKey: "tvHost") ?? TVState.defaultHost
+    @Published var client: TVRemoteClient?
+
+    @Published var pairing: PairingClient?
+    @Published var showPairing = false
+    @Published var pairingCode = ""
+
+    let discovery = DeviceDiscovery()
+
+    private var cancellables = Set<AnyCancellable>()
+
+    private func pairedKey(_ host: String) -> String { "paired_\(host)" }
+    private func isPaired(_ host: String) -> Bool {
+        UserDefaults.standard.bool(forKey: pairedKey(host))
     }
+
+    var isConnected: Bool { client?.state == .connected }
 
     var connectionStateLabel: String {
         switch client?.state {
@@ -20,9 +32,52 @@ class TVState: ObservableObject {
         }
     }
 
+    // MARK: - Connect / pair
+
+    /// Entry point from the UI. Pairs first if this TV has never been paired.
     func connect() {
         guard !tvHost.isEmpty else { return }
+        if isPaired(tvHost) {
+            openRemote()
+        } else {
+            startPairing()
+        }
+    }
+
+    func startPairing() {
+        guard !tvHost.isEmpty else { return }
+        pairingCode = ""
+        let pc = PairingClient(host: tvHost)
+        pc.onPaired = { [weak self] in
+            guard let self else { return }
+            UserDefaults.standard.set(true, forKey: self.pairedKey(self.tvHost))
+            self.showPairing = false
+            self.openRemote()
+        }
+        // Mirror the pairing client's published changes so SwiftUI updates.
+        pc.objectWillChange
+            .sink { [weak self] in self?.objectWillChange.send() }
+            .store(in: &cancellables)
+        pairing = pc
+        showPairing = true
+        pc.start()
+    }
+
+    func submitPairingCode() {
+        pairing?.submitCode(pairingCode)
+    }
+
+    func cancelPairing() {
+        pairing?.cancel()
+        pairing = nil
+        showPairing = false
+    }
+
+    private func openRemote() {
         client = TVRemoteClient(host: tvHost)
+        client?.objectWillChange
+            .sink { [weak self] in self?.objectWillChange.send() }
+            .store(in: &cancellables)
         client?.connect()
     }
 
@@ -30,6 +85,25 @@ class TVState: ObservableObject {
         client?.disconnect()
         client = nil
     }
+
+    /// Forget pairing for the current TV (forces a fresh code next time).
+    func forgetPairing() {
+        UserDefaults.standard.set(false, forKey: pairedKey(tvHost))
+        disconnect()
+    }
+
+    // MARK: - Discovery
+
+    func startScan() { discovery.start() }
+    func stopScan() { discovery.stop() }
+
+    func select(_ device: DiscoveredDevice) {
+        saveHost(device.host)
+        discovery.stop()
+        connect()
+    }
+
+    // MARK: - Input
 
     func press(_ key: RemoteKey) {
         client?.sendKey(key.rawValue, direction: .short)

@@ -53,18 +53,14 @@ struct IncomingMessage {
     let fieldNumber: Int
     let payload: Data
 
-    static func parse(from data: Data) -> IncomingMessage? {
-        guard data.count >= 2 else { return nil }
-        let length = Int(data[0]) << 8 | Int(data[1])
-        guard data.count >= 2 + length, length > 0 else { return nil }
-
-        let payload = data.subdata(in: 2..<(2 + length))
-        guard !payload.isEmpty else { return nil }
-
-        let tagByte = payload[0]
-        let fieldNumber = Int(tagByte >> 3)
-
-        return IncomingMessage(fieldNumber: fieldNumber, payload: payload)
+    /// `payload` is a single de-framed protobuf message (length prefix already removed).
+    init(payload: Data) {
+        self.payload = payload
+        if let first = payload.first {
+            self.fieldNumber = Int(first >> 3)
+        } else {
+            self.fieldNumber = 0
+        }
     }
 
     var isPingRequest: Bool { fieldNumber == 11 }
@@ -73,12 +69,12 @@ struct IncomingMessage {
 
     var pingVal1: UInt64 {
         guard payload.count > 1 else { return 0 }
-        var nested = payload.dropFirst()
-        guard !nested.isEmpty, nested[nested.startIndex] == 0x08 else { return 0 }
-        nested = nested.dropFirst()
-        let offset = nested.startIndex
-        let asData = Data(nested)
-        var idx = offset - asData.startIndex
-        return Data.decodeVarint(from: asData, at: &idx) ?? 0
+        let base = payload.startIndex
+        // field 11 (ping) is a nested message: tag, length, then field 1 varint (0x08).
+        var offset = 1
+        guard let _ = Data.decodeVarint(from: payload, at: &offset) else { return 0 }
+        guard offset < payload.count, payload[base + offset] == 0x08 else { return 0 }
+        offset += 1
+        return Data.decodeVarint(from: payload, at: &offset) ?? 0
     }
 }

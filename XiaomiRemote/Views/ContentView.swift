@@ -18,11 +18,21 @@ struct ContentView: View {
                 }
                 .tag(1)
         }
-        .tint(.white)
+        .tint(.orange)
         .preferredColorScheme(.dark)
+        .sheet(isPresented: $tv.showPairing) {
+            PairingView()
+                .environmentObject(tv)
+                .interactiveDismissDisabled(true)
+        }
         .onAppear {
+            // Reconnect silently only if this TV is already paired; otherwise
+            // send the user to settings to discover / pair.
             if !tv.tvHost.isEmpty {
                 tv.connect()
+                if !tv.isConnected && !tv.showPairing {
+                    selectedTab = 1
+                }
             } else {
                 selectedTab = 1
             }

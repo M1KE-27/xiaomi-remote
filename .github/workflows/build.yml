@@ -1,4 +1,4 @@
-name: Build and Sign iOS IPA
+name: Build iOS IPA
 
 on:
   push:
@@ -33,9 +33,6 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY=""
 
-      - name: Debug archive structure
-        run: find ${{ github.workspace }}/build/XiaomiRemote.xcarchive -type f 2>/dev/null | head -30 || echo "Archive not found"
-
       - name: Package unsigned IPA
         run: |
           mkdir -p ${{ github.workspace }}/build/Payload
@@ -44,28 +41,9 @@ jobs:
           cd ${{ github.workspace }}/build
           zip -r XiaomiRemote-unsigned.ipa Payload/
 
-      - name: Install Fastlane
-        run: gem install fastlane --no-document
-
-      - name: Setup Fastlane session
-        run: |
-          mkdir -p "$HOME/.fastlane/spaceship/${{ secrets.APPLE_ID }}"
-          printf '%s' "${{ secrets.FASTLANE_SESSION }}" | sed 's/\\n/\n/g' \
-            > "$HOME/.fastlane/spaceship/${{ secrets.APPLE_ID }}/cookie"
-
-      - name: Sign IPA
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          FASTLANE_SESSION: ${{ secrets.FASTLANE_SESSION }}
-          FASTLANE_USER: ${{ secrets.APPLE_ID }}
-          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          FASTLANE_SKIP_UPDATE_CHECK: "1"
-          SPACESHIP_SKIP_2FA_UPGRADE: "1"
-        run: fastlane sign
-
-      - name: Upload signed IPA
+      - name: Upload unsigned IPA
         uses: actions/upload-artifact@v4
         with:
-          name: XiaomiRemote-signed
-          path: build/XiaomiRemote-signed.ipa
-          retention-days: 7
+          name: XiaomiRemote-unsigned
+          path: build/XiaomiRemote-unsigned.ipa
+          retention-days: 30
