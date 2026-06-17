@@ -1,4 +1,4 @@
-name: Build iOS IPA
+name: Build and Sign iOS IPA
 
 on:
   push:
@@ -34,18 +34,27 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             | xcpretty || true
 
-      - name: Package IPA
+      - name: Package unsigned IPA
         run: |
           mkdir -p ${{ github.workspace }}/build/Payload
           cp -r ${{ github.workspace }}/build/XiaomiRemote.xcarchive/Products/Applications/XiaomiRemote.app \
                 ${{ github.workspace }}/build/Payload/XiaomiRemote.app
           cd ${{ github.workspace }}/build
           zip -r XiaomiRemote-unsigned.ipa Payload/
-          echo "IPA size: $(du -sh XiaomiRemote-unsigned.ipa)"
 
-      - name: Upload IPA artifact
+      - name: Install Fastlane
+        run: gem install fastlane --no-document
+
+      - name: Sign IPA
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          FASTLANE_SKIP_UPDATE_CHECK: "1"
+        run: fastlane sign
+
+      - name: Upload signed IPA
         uses: actions/upload-artifact@v4
         with:
-          name: XiaomiRemote-unsigned
-          path: build/XiaomiRemote-unsigned.ipa
+          name: XiaomiRemote-signed
+          path: build/XiaomiRemote-signed.ipa
           retention-days: 7

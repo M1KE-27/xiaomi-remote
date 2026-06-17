@@ -1,0 +1,2 @@
+app_identifier("com.local.xiaomiremote")
+apple_id(ENV["APPLE_ID"])
