@@ -22,23 +22,27 @@ Recarga en caliente: editas un `.swift` y el navegador se actualiza solo.
    swift --version
    ```
 
-2. **SDK de WebAssembly** que coincida con tu versión de Swift. Mira la release
-   correspondiente en https://github.com/swiftwasm/swift/releases y:
+2. **SDK oficial de WebAssembly de swift.org** que COINCIDA con tu Swift.
+   ⚠️ En Fedora NO sirve la toolchain de SwiftWasm (solo trae binarios para
+   Ubuntu/Amazon Linux). Usa el SDK oficial (agnóstico de distro). Para 6.3.2:
    ```bash
-   swift sdk install <URL-del-artifactbundle-wasm-de-tu-versión>
-   swift sdk list   # debe aparecer un target wasm32-unknown-wasi
+   swift sdk install https://download.swift.org/swift-6.3.2-release/wasm-sdk/swift-6.3.2-RELEASE/swift-6.3.2-RELEASE_wasm.artifactbundle.tar.gz --checksum a61f0584c93283589f8b2f42db05c1f9a182b506c2957271402992655591dd7c
+   swift sdk list   # -> swift-6.3.2-RELEASE_wasm
    ```
+   Para otra versión de Swift, mira la URL en
+   https://www.swift.org/documentation/articles/wasm-getting-started.html
 
 ## Arrancar el preview
 
 ```bash
 cd preview-swift
-swift run carton dev
+# IMPORTANTE: apuntar a ese SDK para que carton no baje la toolchain de Ubuntu
+swift run carton dev --swift-sdk swift-6.3.2-RELEASE_wasm
 # abre http://127.0.0.1:8080
 ```
 
-Si `carton` se queja por versiones de Tokamak/Swift, dímelo con el error y
-ajustamos los pins en `Package.swift` (Tokamak 0.11.x ↔ Swift 5.9 / 6.0).
+Si Tokamak 0.11.1 no compila con Swift 6.3, dímelo con el error y subo el pin
+de Tokamak en `Package.swift`.
 
 ## Estructura
 
