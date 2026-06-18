@@ -34,9 +34,18 @@ struct ContentView: View {
             }
         }
         .onChange(of: scenePhase) { phase in
-            // Al volver del segundo plano, reconectar (la conexión se cae al
-            // suspender la app).
-            if phase == .active { tv.reconnectIfNeeded() }
+            switch phase {
+            case .active:
+                // Volvemos a primer plano: cerrar la ventana de gracia y
+                // reconectar al instante si hizo falta.
+                tv.endBackgroundHold()
+                tv.reconnectIfNeeded()
+            case .background:
+                // Pedir margen para no cortar la conexión en cambios rápidos.
+                tv.beginBackgroundHold()
+            default:
+                break
+            }
         }
     }
 }

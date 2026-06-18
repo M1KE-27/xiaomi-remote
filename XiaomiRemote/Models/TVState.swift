@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import UIKit
 
 @MainActor
 class TVState: ObservableObject {
@@ -130,6 +131,28 @@ class TVState: ObservableObject {
     /// Lanzar una app por deep-link (Netflix, Prime, etc.).
     func launchApp(_ link: String) {
         client?.launchApp(link)
+    }
+
+    // MARK: - Segundo plano
+
+    private var bgTask: UIBackgroundTaskIdentifier = .invalid
+
+    /// Pide a iOS una ventana de gracia (~30 s) antes de suspender la app, para
+    /// que cambios rápidos de app o notificaciones no corten la conexión.
+    /// iOS NO permite mantener el socket vivo indefinidamente; pasado ese margen
+    /// la conexión se cae y la recuperamos al volver a primer plano.
+    func beginBackgroundHold() {
+        endBackgroundHold()
+        bgTask = UIApplication.shared.beginBackgroundTask(withName: "tv-keepalive") { [weak self] in
+            self?.endBackgroundHold()
+        }
+    }
+
+    func endBackgroundHold() {
+        if bgTask != .invalid {
+            UIApplication.shared.endBackgroundTask(bgTask)
+            bgTask = .invalid
+        }
     }
 
     /// Reconecta al volver del segundo plano si está emparejado y no hay ya una
