@@ -1,4 +1,18 @@
 import SwiftUI
+import UIKit
+
+/// Háptica ligera reutilizable (preparada para mínima latencia).
+enum Haptics {
+    private static let gen: UIImpactFeedbackGenerator = {
+        let g = UIImpactFeedbackGenerator(style: .light)
+        g.prepare()
+        return g
+    }()
+    static func tap() {
+        gen.impactOccurred(intensity: 0.7)
+        gen.prepare()
+    }
+}
 
 // MARK: - Keycodes Android usados por el mando
 private enum K {
@@ -28,7 +42,7 @@ struct RemoteView: View {
                     numberPad
                     labelRow
                     appRow
-                    dpad(size: min(geo.size.width * 0.62, 230))
+                    dpad(size: min(geo.size.width * 0.56, 200))
                     controlRow
                     colorRow
                     volumeRow
@@ -46,9 +60,14 @@ struct RemoteView: View {
             .padding(.horizontal, 14)
 
             if !tv.isConnected {
-                disconnectedBanner
+                statusBanner
             }
         }
+    }
+
+    private var isConnecting: Bool {
+        if case .connecting = tv.client?.state { return true }
+        return false
     }
 
     // MARK: Filas
@@ -145,21 +164,27 @@ struct RemoteView: View {
         }
     }
 
-    private var disconnectedBanner: some View {
+    private var statusBanner: some View {
         VStack {
             HStack(spacing: 8) {
-                Image(systemName: "wifi.exclamationmark")
-                Text("Sin conexión con el TV")
-                Button("Reconectar") { tv.reconnectIfNeeded() }
-                    .font(.caption.bold())
+                if isConnecting {
+                    ProgressView().scaleEffect(0.7).tint(.black)
+                    Text("Conectando…")
+                } else {
+                    Image(systemName: "wifi.exclamationmark")
+                    Text("Sin conexión")
+                    Button("Reconectar") { tv.reconnectIfNeeded() }
+                        .font(.caption.bold())
+                }
             }
-            .font(.caption)
+            .font(.caption.weight(.semibold))
             .padding(.horizontal, 14).padding(.vertical, 8)
-            .background(Capsule().fill(Color.orange.opacity(0.9)))
+            .background(Capsule().fill((isConnecting ? Color.yellow : Color.orange).opacity(0.95)))
             .foregroundColor(.black)
             .padding(.top, 10)
             Spacer()
         }
+        .allowsHitTesting(!isConnecting)
     }
 }
 
@@ -179,7 +204,11 @@ private struct Pressable<Content: View>: View {
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { _ in
-                        if !pressed { pressed = true; action() }   // envía al tocar
+                        if !pressed {                              // envía al tocar
+                            pressed = true
+                            Haptics.tap()
+                            action()
+                        }
                     }
                     .onEnded { _ in pressed = false }
             )
@@ -191,7 +220,7 @@ private struct Pressable<Content: View>: View {
 private struct CircleKey: View {
     let icon: String
     var fg: Color = .white
-    var size: CGFloat = 46
+    var size: CGFloat = 44
     let action: () -> Void
     var body: some View {
         Pressable(action: action) {
@@ -239,9 +268,9 @@ private struct NumberKey: View {
     var body: some View {
         Pressable(action: action) {
             Text("\(n)")
-                .font(.system(size: 20, weight: .semibold))
+                .font(.system(size: 19, weight: .semibold))
                 .foregroundColor(.white)
-                .frame(width: 46, height: 46)
+                .frame(width: 44, height: 44)
                 .background(Circle().fill(Color.white.opacity(0.10)))
         }
     }

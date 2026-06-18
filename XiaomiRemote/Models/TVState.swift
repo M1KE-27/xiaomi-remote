@@ -83,12 +83,15 @@ class TVState: ObservableObject {
         showPairing = false
     }
 
+    private var clientCancellable: AnyCancellable?
+
     private func openRemote() {
-        client = TVRemoteClient(host: tvHost)
-        client?.objectWillChange
+        client?.disconnect()                 // cierra cualquier conexión previa
+        let c = TVRemoteClient(host: tvHost)
+        clientCancellable = c.objectWillChange
             .sink { [weak self] in self?.objectWillChange.send() }
-            .store(in: &cancellables)
-        client?.connect()
+        client = c
+        c.connect()
     }
 
     func disconnect() {
@@ -129,10 +132,14 @@ class TVState: ObservableObject {
         client?.launchApp(link)
     }
 
-    /// Reconecta al volver del segundo plano si está emparejado y no conectado.
+    /// Reconecta al volver del segundo plano si está emparejado y no hay ya una
+    /// conexión activa o en curso.
     func reconnectIfNeeded() {
         guard !tvHost.isEmpty, isPaired(tvHost) else { return }
-        if client == nil || client?.state != .connected {
+        switch client?.state {
+        case .connected, .connecting:
+            return                       // ya está (o reintentando solo)
+        default:
             openRemote()
         }
     }

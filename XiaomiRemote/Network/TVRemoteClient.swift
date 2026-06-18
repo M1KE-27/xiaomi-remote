@@ -11,6 +11,10 @@ class TVRemoteClient: ObservableObject {
     private let host: String
     private let port: UInt16 = 6466
 
+    private var manualDisconnect = false
+    private var reconnectAttempts = 0
+    private let maxReconnects = 6
+
     enum ConnectionState: Equatable {
         case disconnected
         case connecting
@@ -23,6 +27,9 @@ class TVRemoteClient: ObservableObject {
     }
 
     func connect() {
+        manualDisconnect = false
+        connection?.cancel()        // nunca dejamos dos conexiones vivas
+        receiveBuffer.removeAll()
         state = .connecting
         let tlsOptions = NWProtocolTLS.Options()
 
@@ -59,6 +66,7 @@ class TVRemoteClient: ObservableObject {
     }
 
     func disconnect() {
+        manualDisconnect = true
         connection?.cancel()
         connection = nil
         state = .disconnected
@@ -78,15 +86,32 @@ class TVRemoteClient: ObservableObject {
         switch nwState {
         case .ready:
             state = .connected
+            reconnectAttempts = 0
             // El handshake lo inicia el TV: nos manda remote_configure y
             // respondemos en processBuffer(). No enviamos nada proactivamente.
             receiveLoop()
-        case .failed(let error):
-            state = .failed(error.localizedDescription)
+        case .failed:
+            scheduleReconnect()
         case .cancelled:
-            state = .disconnected
+            if manualDisconnect { state = .disconnected }
+            else { scheduleReconnect() }
         default:
             break
+        }
+    }
+
+    /// Reintenta la conexión con pequeño retardo cuando se cae sin querer.
+    private func scheduleReconnect() {
+        guard !manualDisconnect, reconnectAttempts < maxReconnects else {
+            state = .failed("Sin conexión con el TV")
+            return
+        }
+        reconnectAttempts += 1
+        state = .connecting
+        let delay = Double(min(reconnectAttempts, 3))   // 1s, 2s, 3s...
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self, !self.manualDisconnect else { return }
+            self.connect()
         }
     }
 
