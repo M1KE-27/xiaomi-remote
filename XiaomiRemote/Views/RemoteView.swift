@@ -42,7 +42,7 @@ struct RemoteView: View {
             LinearGradient(colors: [Palette.bg0, Palette.bg1], startPoint: .top, endPoint: .bottom)
                 .ignoresSafeArea()
 
-            VStack(spacing: 16) {
+            VStack(spacing: 11) {
                 topRow
                 numberPad
                 labelRow
@@ -52,12 +52,12 @@ struct RemoteView: View {
                 colorRow
                 volumeRow
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 22)
-            .frame(maxWidth: 340)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
+            .frame(maxWidth: 330)
             .background(remoteBody)
             .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .padding(.vertical, 6)
 
             if !tv.isConnected && !AppPreview.suppressBanner { statusBanner }
         }
@@ -88,7 +88,7 @@ struct RemoteView: View {
     }
 
     private var numberPad: some View {
-        VStack(spacing: 11) {
+        VStack(spacing: 8) {
             ForEach(0..<3, id: \.self) { row in
                 HStack(spacing: 16) {
                     ForEach(1...3, id: \.self) { col in
@@ -103,7 +103,7 @@ struct RemoteView: View {
                 PillKey("CH LIST", small: true) { tv.pressCode(K.chList) }
             }
         }
-        .padding(.vertical, 14)
+        .padding(.vertical, 10)
         .padding(.horizontal, 12)
         .background(
             RoundedRectangle(cornerRadius: 26, style: .continuous)
@@ -138,10 +138,10 @@ struct RemoteView: View {
             // Anillo rebajado
             Circle()
                 .fill(RadialGradient(colors: [Palette.ringLo, Palette.ringHi],
-                                     center: .center, startRadius: 30, endRadius: 120))
+                                     center: .center, startRadius: 26, endRadius: 105))
                 .overlay(Circle().stroke(Color.black.opacity(0.5), lineWidth: 1).blur(radius: 1))
                 .overlay(Circle().stroke(Color.white.opacity(0.05), lineWidth: 1))
-                .frame(width: 208, height: 208)
+                .frame(width: 184, height: 184)
 
             VStack {
                 DirKey("chevron.up") { tv.pressCode(K.up) }
@@ -154,13 +154,11 @@ struct RemoteView: View {
                 Spacer()
                 DirKey("chevron.down") { tv.pressCode(K.down) }
             }
-            .frame(width: 188, height: 188)
-            .padding(8)
+            .frame(width: 168, height: 168)
 
             OKKey { tv.pressCode(K.ok) }
         }
-        .frame(width: 208, height: 208)
-        .padding(.vertical, 4)
+        .frame(width: 184, height: 184)
     }
 
     private var controlRow: some View {
@@ -182,9 +180,9 @@ struct RemoteView: View {
 
     private var volumeRow: some View {
         HStack(spacing: 30) {
-            CircleKey(glyph: "minus", size: 48) { tv.pressCode(K.volDown) }
+            CircleKey(glyph: "minus", size: 46) { tv.pressCode(K.volDown) }
             CircleKey(glyph: "speaker.slash.fill", size: 42) { tv.pressCode(K.mute) }
-            CircleKey(glyph: "plus", size: 48) { tv.pressCode(K.volUp) }
+            CircleKey(glyph: "plus", size: 46) { tv.pressCode(K.volUp) }
         }
     }
 
@@ -277,9 +275,9 @@ private struct OKKey: View {
     var body: some View {
         Pressable(action: action) { p in
             Text("OK")
-                .font(.system(size: 26, weight: .heavy))
+                .font(.system(size: 23, weight: .heavy))
                 .foregroundColor(.white)
-                .frame(width: 92, height: 92)
+                .frame(width: 78, height: 78)
                 .background(
                     Circle().fill(LinearGradient(
                         colors: p ? [Palette.keyLo, Palette.ringLo] : [Palette.keyHi, Palette.keyLo],
@@ -297,9 +295,9 @@ private struct NumberKey: View {
     var body: some View {
         Pressable(action: action) { p in
             Text("\(n)")
-                .font(.system(size: 21, weight: .semibold, design: .rounded))
+                .font(.system(size: 20, weight: .semibold, design: .rounded))
                 .foregroundColor(.white.opacity(p ? 0.7 : 1))
-                .frame(width: 50, height: 50)
+                .frame(width: 46, height: 46)
                 .background(RaisedCircle(pressed: p))
         }
     }
