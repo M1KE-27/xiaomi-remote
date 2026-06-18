@@ -47,6 +47,15 @@ enum TVMessage {
         return msg.build().withLengthPrefix()
     }
 
+    /// RemoteMessage.remote_app_link_launch_request = 90 · { app_link = 1 }
+    static func appLink(_ link: String) -> Data {
+        var msg = ProtobufEncoder()
+        msg.putMessage(90) { req in
+            req.putString(1, value: link)
+        }
+        return msg.build().withLengthPrefix()
+    }
+
     /// RemoteMessage.remote_ping_response = 9
     static func pingResponse(val1: UInt64) -> Data {
         var msg = ProtobufEncoder()

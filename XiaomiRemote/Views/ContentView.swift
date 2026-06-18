@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject var tv: TVState
     @State private var selectedTab = 0
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -31,6 +32,11 @@ struct ContentView: View {
             if !tv.connectIfPaired() {
                 selectedTab = 1
             }
+        }
+        .onChange(of: scenePhase) { phase in
+            // Al volver del segundo plano, reconectar (la conexión se cae al
+            // suspender la app).
+            if phase == .active { tv.reconnectIfNeeded() }
         }
     }
 }

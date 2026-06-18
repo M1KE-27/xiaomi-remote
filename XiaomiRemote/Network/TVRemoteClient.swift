@@ -69,6 +69,11 @@ class TVRemoteClient: ObservableObject {
         send(TVMessage.keyInject(keyCode: keyCode, direction: direction))
     }
 
+    func launchApp(_ link: String) {
+        guard state == .connected else { return }
+        send(TVMessage.appLink(link))
+    }
+
     private func handleStateChange(_ nwState: NWConnection.State) {
         switch nwState {
         case .ready:

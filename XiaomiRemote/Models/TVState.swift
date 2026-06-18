@@ -119,6 +119,24 @@ class TVState: ObservableObject {
         client?.sendKey(key.rawValue, direction: .short)
     }
 
+    /// Envío directo por keycode Android (para la UI nueva del mando).
+    func pressCode(_ code: Int) {
+        client?.sendKey(code, direction: .short)
+    }
+
+    /// Lanzar una app por deep-link (Netflix, Prime, etc.).
+    func launchApp(_ link: String) {
+        client?.launchApp(link)
+    }
+
+    /// Reconecta al volver del segundo plano si está emparejado y no conectado.
+    func reconnectIfNeeded() {
+        guard !tvHost.isEmpty, isPaired(tvHost) else { return }
+        if client == nil || client?.state != .connected {
+            openRemote()
+        }
+    }
+
     func longPress(_ key: RemoteKey) {
         client?.sendKey(key.rawValue, direction: .startLong)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
