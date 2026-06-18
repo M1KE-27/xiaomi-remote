@@ -59,7 +59,7 @@ struct RemoteView: View {
             }
             .padding(.horizontal, 14)
 
-            if !tv.isConnected {
+            if !tv.isConnected && !AppPreview.suppressBanner {
                 statusBanner
             }
         }

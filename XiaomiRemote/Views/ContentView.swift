@@ -1,5 +1,14 @@
 import SwiftUI
 
+/// Modo preview para capturas en el Simulador (CI). Se activa solo si se lanza
+/// con argumentos PREVIEW_* — no afecta al uso normal.
+enum AppPreview {
+    static let args = ProcessInfo.processInfo.arguments
+    static var isOn: Bool { args.contains { $0.hasPrefix("PREVIEW_") } }
+    static var suppressBanner: Bool { args.contains("PREVIEW_REMOTE") }
+    static var initialTab: Int { args.contains("PREVIEW_SETTINGS") ? 1 : 0 }
+}
+
 struct ContentView: View {
     @EnvironmentObject var tv: TVState
     @State private var selectedTab = 0
@@ -27,6 +36,10 @@ struct ContentView: View {
                 .interactiveDismissDisabled(true)
         }
         .onAppear {
+            if AppPreview.isOn {            // capturas en CI
+                selectedTab = AppPreview.initialTab
+                return
+            }
             // Reconnect silently only if this TV is already paired; never start
             // pairing automatically. If not paired, land on Ajustes.
             if !tv.connectIfPaired() {

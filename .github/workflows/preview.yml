@@ -1,0 +1,71 @@
+name: Preview (capturas del Simulador iOS)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  screenshots:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build for iOS Simulator
+        run: |
+          xcodebuild build \
+            -scheme XiaomiRemote \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            -derivedDataPath build \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
+
+      - name: Boot simulator
+        run: |
+          DEVICE="iPhone 16 Pro"
+          xcrun simctl boot "$DEVICE" 2>/dev/null || \
+            { DEVICE="iPhone 15 Pro"; xcrun simctl boot "$DEVICE"; }
+          echo "DEVICE=$DEVICE" >> "$GITHUB_ENV"
+          xcrun simctl bootstatus booted -b
+          # apariencia oscura + barra de estado limpia
+          xcrun simctl ui booted appearance dark || true
+          xcrun simctl status_bar booted override \
+            --time "9:41" --batteryState charged --batteryLevel 100 --cellularBars 4 --wifiBars 3 || true
+
+      - name: Install app
+        run: |
+          APP=$(find build/Build/Products/Debug-iphonesimulator -maxdepth 1 -name '*.app' | head -1)
+          echo "APP=$APP"
+          xcrun simctl install booted "$APP"
+
+      - name: Capture screens
+        run: |
+          BID=com.local.xiaomiremote
+          mkdir -p shots
+          # Mando
+          xcrun simctl launch booted "$BID" PREVIEW_REMOTE
+          sleep 5
+          xcrun simctl io booted screenshot shots/01-remote.png
+          xcrun simctl terminate booted "$BID" || true
+          # Ajustes
+          xcrun simctl launch booted "$BID" PREVIEW_SETTINGS
+          sleep 5
+          xcrun simctl io booted screenshot shots/02-ajustes.png
+          xcrun simctl terminate booted "$BID" || true
+          ls -la shots
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-screenshots
+          path: shots/*.png
+          retention-days: 30
