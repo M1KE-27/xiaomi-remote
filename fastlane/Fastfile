@@ -1,0 +1,42 @@
+default_platform(:ios)
+
+platform :ios do
+  lane :sign do
+    # Register the device if not already registered
+    register_device(
+      name: "M1KE-iPhone",
+      udid: "00008150-000175023A8B401C",
+      username: ENV["APPLE_ID"]
+    )
+
+    # Register the app in the developer portal
+    produce(
+      username: ENV["APPLE_ID"],
+      app_identifier: "com.local.xiaomiremote",
+      app_name: "TV Remote",
+      skip_itc: true
+    )
+
+    # Download development certificate
+    cert(
+      username: ENV["APPLE_ID"],
+      development: true
+    )
+
+    # Download provisioning profile
+    sigh(
+      username: ENV["APPLE_ID"],
+      app_identifier: "com.local.xiaomiremote",
+      development: true,
+      force: true
+    )
+
+    # Sign the IPA
+    resign(
+      ipa: "build/XiaomiRemote-unsigned.ipa",
+      signing_identity: "iPhone Developer",
+      provisioning_profile: lane_context[SharedValues::SIGH_PROFILE_PATH],
+      output_path: "build/XiaomiRemote-signed.ipa"
+    )
+  end
+end

@@ -1,0 +1,7 @@
+*.p12
+*.key
+*.pem
+.DS_Store
+build/
+*.xcarchive
+DerivedData/

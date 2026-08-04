@@ -1,0 +1,49 @@
+name: Build iOS IPA
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Inject TV certificate
+        run: |
+          echo "${{ secrets.TV_P12_BASE64 }}" | base64 --decode > XiaomiRemote/tv_identity.p12
+
+      - name: Build (unsigned)
+        run: |
+          xcodebuild archive \
+            -scheme XiaomiRemote \
+            -archivePath ${{ github.workspace }}/build/XiaomiRemote.xcarchive \
+            -destination "generic/platform=iOS" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+
+      - name: Package unsigned IPA
+        run: |
+          mkdir -p ${{ github.workspace }}/build/Payload
+          cp -r ${{ github.workspace }}/build/XiaomiRemote.xcarchive/Products/Applications/XiaomiRemote.app \
+                ${{ github.workspace }}/build/Payload/XiaomiRemote.app
+          cd ${{ github.workspace }}/build
+          zip -r XiaomiRemote-unsigned.ipa Payload/
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: XiaomiRemote-unsigned
+          path: build/XiaomiRemote-unsigned.ipa
+          retention-days: 30
