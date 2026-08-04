@@ -387,6 +387,7 @@ private struct CircleKey: View {
 
 private struct DirKey: View {
     let glyph: String; let action: () -> Void
+    init(_ glyph: String, action: @escaping () -> Void) { self.glyph = glyph; self.action = action }
     var body: some View {
         Pressable(action: action) { p in
             Image(systemName: glyph)
@@ -417,6 +418,7 @@ private struct OKKey: View {
 
 private struct NumberKey: View {
     let n: Int; let action: () -> Void
+    init(_ n: Int, action: @escaping () -> Void) { self.n = n; self.action = action }
     var body: some View {
         Pressable(action: action) { p in
             Text("\(n)")
@@ -460,6 +462,7 @@ private struct AppPill: View {
 
 private struct ColorKey: View {
     let colors: [Color]; let action: () -> Void
+    init(_ colors: [Color], action: @escaping () -> Void) { self.colors = colors; self.action = action }
     var body: some View {
         Pressable(action: action) { p in
             RoundedRectangle(cornerRadius: 8)
