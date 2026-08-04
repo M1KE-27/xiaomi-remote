@@ -23,9 +23,9 @@ struct SettingsPreview: View {
                         }
                         row {
                             HStack {
-                                Text("📺 MiTV-MSSP2").foregroundColor(.white)
+                                Text("📺 Smart TV Universal").foregroundColor(.white)
                                 Spacer()
-                                Text("192.168.3.17").font(.system(size: 12)).foregroundColor(.gray)
+                                Text("192.168.1.42").font(.system(size: 12)).foregroundColor(.gray)
                             }
                         }
                     }

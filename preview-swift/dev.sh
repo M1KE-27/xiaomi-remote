@@ -25,7 +25,11 @@ HTML
 
 build() {
   echo "🔨 $(date +%H:%M:%S) compilando a wasm..."
-  if swift package --swift-sdk "$SDK" --disable-sandbox js --use-cdn; then
+  # El SDK oficial de WASI exige flags para mman/signal/clocks que Tokamak no pone.
+  if swift package --swift-sdk "$SDK" --disable-sandbox \
+      -Xcc -D_WASI_EMULATED_MMAN -Xcc -D_WASI_EMULATED_SIGNAL -Xcc -D_WASI_EMULATED_PROCESS_CLOCKS \
+      -Xlinker -lwasi-emulated-mman -Xlinker -lwasi-emulated-signal -Xlinker -lwasi-emulated-process-clocks \
+      js --use-cdn; then
     inject_reload
     date +%s%N > "$OUT/__reload__"
     echo "✅ listo"

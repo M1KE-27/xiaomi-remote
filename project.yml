@@ -27,13 +27,13 @@ targets:
     info:
       path: XiaomiRemote/App/Info.plist
       properties:
-        CFBundleDisplayName: TV Remote
+        CFBundleDisplayName: Mando Universal
         CFBundleShortVersionString: "1.0"
         CFBundleVersion: "1"
         UILaunchScreen:
           UIColorName: ""
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
-        NSLocalNetworkUsageDescription: "Necesario para conectar con tu Xiaomi TV en la red local."
+        NSLocalNetworkUsageDescription: "Necesario para conectar con tu Smart TV en la red local."
         NSBonjourServices:
           - "_androidtvremote2._tcp"

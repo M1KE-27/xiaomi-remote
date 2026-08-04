@@ -3,7 +3,7 @@ import TokamakShim
 @main
 struct XiaomiRemotePreviewApp: App {
     var body: some Scene {
-        WindowGroup("XiaomiRemote") {
+        WindowGroup("Mando Universal") {
             PreviewRoot()
         }
     }

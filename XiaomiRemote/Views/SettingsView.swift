@@ -26,7 +26,7 @@ struct SettingsView: View {
     // MARK: - Discovery
 
     private var discoverySection: some View {
-        Section("Dispositivos") {
+        Section("Televisores Detectados") {
             Button {
                 if tv.discovery.isScanning { tv.stopScan() } else { tv.startScan() }
             } label: {

@@ -18,7 +18,7 @@ struct ContentView: View {
         TabView(selection: $selectedTab) {
             RemoteView()
                 .tabItem {
-                    Label("Remote", systemImage: "tv.remote.fill")
+                    Label("Mando", systemImage: "tv.remote.fill")
                 }
                 .tag(0)
 
