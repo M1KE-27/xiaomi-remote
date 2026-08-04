@@ -84,18 +84,33 @@ else
     info "(no se pudo parchear, sigo con el IPA original)"
 fi
 
-# 3) Reintentar instalación: sideloader pide Apple ID/contraseña/2FA por terminal.
-#    El login da -22406 de forma aleatoria; reintentamos hasta que entra.
-info "Sideloader pedirá tu Apple ID, contraseña y (si toca) el código 2FA del iPhone."
+# 3) Reintentar instalación con AltServer
+info "Ejecutando AltServer para instalar en el iPhone..."
+OUT_LOG=$(mktemp)
+
+CMD_PASS=""
+if [ -n "${APPLE_PASS:-}" ]; then
+    CMD_PASS="-p $APPLE_PASS"
+fi
+
 for i in $(seq 1 "$RETRIES"); do
     info "=== Intento $i/$RETRIES ==="
-    if "$SIDELOADER" -u "$UDID" -a "$APPLE_ID" "$IPA"; then
-        green "¡Instalado! Confía en el perfil en Ajustes › General › VPN y gestión de dispositivos."
+    : > "$OUT_LOG"
+    if [ -n "$CMD_PASS" ]; then
+        "$SIDELOADER" -u "$UDID" -a "$APPLE_ID" $CMD_PASS "$IPA" 2>&1 | tee "$OUT_LOG"
+    else
+        "$SIDELOADER" -u "$UDID" -a "$APPLE_ID" "$IPA" 2>&1 | tee "$OUT_LOG"
+    fi
+    
+    if ! grep -q -E "(Could not install|Error:|-22406|Exception:)" "$OUT_LOG" && grep -q -E "(Finished!|Installed)" "$OUT_LOG"; then
+        green "¡Instalado con éxito! Confía en el perfil en Ajustes › General › VPN y gestión de dispositivos."
+        rm -f "$OUT_LOG"
         exit 0
     fi
-    info "Reintentando en 4s (el fallo de login suele ser aleatorio)..."
-    sleep 4
+    info "El intento falló (error de autenticación/2FA o timeout). Reintentando en 3s..."
+    sleep 3
 done
 
-red "No se pudo instalar tras $RETRIES intentos. Revisa contraseña/2FA y vuelve a ejecutar."
+rm -f "$OUT_LOG"
+red "No se pudo instalar tras $RETRIES intentos. Revisa tu contraseña de Apple ID o código 2FA."
 exit 1
