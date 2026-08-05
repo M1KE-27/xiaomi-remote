@@ -210,8 +210,13 @@ final class AppState: ObservableObject {
 
     func reconnectIfNeeded() {
         guard autoReconnect, let device = connectedDevice else { return }
-        if connectionStatus == .disconnected || connectionStatus.isConnecting == false {
+
+        switch connectionStatus {
+        case .disconnected, .failed:
             networkService.connect(to: device)
+
+        case .connecting, .connected:
+            return
         }
     }
 
