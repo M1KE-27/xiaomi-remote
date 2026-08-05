@@ -51,9 +51,14 @@ class TVRemoteClient: ObservableObject {
         let params = NWParameters(tls: tlsOptions)
         params.allowLocalEndpointReuse = true
 
+        guard let nwPort = NWEndpoint.Port(rawValue: port) else {
+            state = .failed("Puerto inválido: \(port)")
+            return
+        }
+
         let endpoint = NWEndpoint.hostPort(
             host: NWEndpoint.Host(host),
-            port: NWEndpoint.Port(rawValue: port)!
+            port: nwPort
         )
 
         connection = NWConnection(to: endpoint, using: params)

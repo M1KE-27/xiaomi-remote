@@ -3,24 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mando Universal · Preview</title>
+<title>Mando Universal · Preview Nativo</title>
 <style>
   :root {
-    --bg-dark: #0a0b0d;
-    --remote-body-top: #2a2d32;
-    --remote-body-mid: #1d1f23;
-    --remote-body-bot: #121316;
-    --remote-border: #3f434a;
-    --btn-grad-top: #34383e;
-    --btn-grad-bot: #1e2025;
-    --btn-border: #4a4f57;
-    --accent-red: #ff3b30;
-    --accent-orange: #ff9500;
+    --bg-dark: #090b0f;
+    --card-bg: #151920;
     --accent-blue: #007aff;
     --accent-green: #34c759;
-    --glow-red: rgba(255, 59, 48, 0.4);
-    --glow-orange: rgba(255, 149, 0, 0.4);
-    --glow-blue: rgba(0, 122, 255, 0.4);
+    --border-color: rgba(255, 255, 255, 0.08);
   }
 
   * {
@@ -41,11 +31,10 @@
     color: #f0f0f5;
   }
 
-  /* Phone Simulator Container */
   .phone-frame {
     width: 380px;
-    height: 800px;
-    background: #000;
+    height: 810px;
+    background: var(--bg-dark);
     border-radius: 48px;
     border: 12px solid #1c1d21;
     box-shadow: 0 25px 80px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08);
@@ -55,29 +44,17 @@
     flex-direction: column;
   }
 
-  /* Screen Header / Status Bar */
   .status-header {
     height: 38px;
-    background: #111215;
+    background: #0d0f14;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 22px;
+    padding: 0 20px;
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 700;
     color: #a0a5b0;
-    letter-spacing: 0.5px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  }
-
-  .status-header .brand-title {
-    color: #fff;
-    font-weight: 800;
-    letter-spacing: 1.2px;
-    font-size: 11px;
-    background: linear-gradient(135deg, #fff 0%, #8a909d 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    border-bottom: 1px solid var(--border-color);
   }
 
   .screen-body {
@@ -85,309 +62,128 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background: #0e0f12;
+    background: var(--bg-dark);
   }
 
   .view {
     flex: 1;
     display: none;
     flex-direction: column;
-    padding: 14px 18px;
+    padding: 14px 16px;
     overflow-y: auto;
+    gap: 14px;
   }
 
   .view.active {
     display: flex;
   }
 
-  /* --- REALISTIC REMOTE CONTROL BODY --- */
-  .remote-shell {
-    background: linear-gradient(180deg, var(--remote-body-top) 0%, var(--remote-body-mid) 50%, var(--remote-body-bot) 100%);
-    border-radius: 36px;
-    border: 1px solid var(--remote-border);
-    box-shadow: 
-      inset 0 1px 1px rgba(255, 255, 255, 0.25),
-      inset 0 -2px 4px rgba(0, 0, 0, 0.8),
-      0 12px 32px rgba(0, 0, 0, 0.7);
-    padding: 18px 16px;
+  .card {
+    background: var(--card-bg);
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    padding: 14px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    position: relative;
+    gap: 10px;
   }
 
-  /* Top Emitter LED & Brand Bar */
-  .remote-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 4px;
-  }
-
-  .ir-led {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: #2a2c30;
-    border: 1px solid #484d56;
-    box-shadow: inset 0 1px 2px rgba(0,0,0,0.8);
-    position: relative;
-    transition: background 0.15s, box-shadow 0.15s;
-  }
-
-  .ir-led.active {
-    background: #00e5ff;
-    box-shadow: 0 0 10px #00e5ff, 0 0 20px #00e5ff;
-  }
-
-  .remote-brand {
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 2px;
-    color: #6c727e;
-    text-transform: uppercase;
-    text-shadow: 0 1px 1px rgba(0,0,0,0.8);
-  }
-
-  /* Universal Mode Selector */
-  .mode-selector {
-    display: flex;
-    background: rgba(0,0,0,0.4);
-    border-radius: 12px;
-    padding: 3px;
-    border: 1px solid rgba(255,255,255,0.06);
-    gap: 2px;
-  }
-
-  .mode-btn {
-    flex: 1;
-    background: none;
-    border: none;
-    color: #717782;
-    font-size: 10px;
-    font-weight: 700;
-    padding: 5px 0;
-    border-radius: 9px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .mode-btn.active {
-    background: linear-gradient(180deg, #3a3f47 0%, #24272d 100%);
-    color: var(--accent-orange);
-    box-shadow: 0 2px 5px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.15);
-  }
-
-  /* 3D Tactile Buttons Base */
+  /* BUTTONS */
   .btn-tactile {
-    background: linear-gradient(180deg, var(--btn-grad-top) 0%, var(--btn-grad-bot) 100%);
-    border: 1px solid var(--btn-border);
-    color: #e2e4e9;
+    background: linear-gradient(180deg, #282c35 0%, #171920 100%);
+    border: 1px solid var(--border-color);
+    color: #fff;
     border-radius: 14px;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 700;
-    box-shadow: 
-      0 4px 6px rgba(0, 0, 0, 0.5),
-      inset 0 1px 1px rgba(255, 255, 255, 0.15),
-      inset 0 -1px 2px rgba(0, 0, 0, 0.4);
-    transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.08s;
-  }
-
-  .btn-tactile:active, .btn-tactile.pressed {
-    transform: translateY(2px) scale(0.96);
-    box-shadow: 
-      0 1px 2px rgba(0, 0, 0, 0.6),
-      inset 0 2px 4px rgba(0, 0, 0, 0.7);
-    filter: brightness(0.85);
-  }
-
-  /* Power & Top Action Row */
-  .top-action-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .btn-power {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: linear-gradient(180deg, #d32f2f 0%, #8b0000 100%);
-    border: 1px solid #ff6b6b;
-    color: #fff;
-    font-size: 18px;
-    box-shadow: 0 4px 12px rgba(211, 47, 47, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.4);
-  }
-
-  .btn-power:active {
-    box-shadow: 0 1px 4px rgba(211, 47, 47, 0.6), inset 0 2px 4px rgba(0, 0, 0, 0.8);
-  }
-
-  .btn-input, .btn-settings {
-    height: 40px;
-    padding: 0 14px;
-    font-size: 11px;
-    letter-spacing: 0.5px;
-    border-radius: 12px;
-  }
-
-  .btn-assistant {
-    width: 44px;
     height: 44px;
-    border-radius: 50%;
-    background: conic-gradient(#4285f4, #ea4335, #fbbc05, #34a853, #4285f4);
-    border: 1px solid rgba(255,255,255,0.3);
-    color: #fff;
-    font-size: 16px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-  }
-
-  /* Streaming Quick Pills Row */
-  .apps-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-  }
-
-  .app-pill {
-    height: 36px;
-    border-radius: 10px;
-    border: none;
-    font-weight: 800;
-    font-size: 10px;
-    letter-spacing: 0.2px;
-    color: #fff;
-    cursor: pointer;
-    box-shadow: 0 3px 6px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.25);
     transition: transform 0.08s, filter 0.08s;
   }
 
-  .app-pill:active {
-    transform: translateY(2px) scale(0.95);
+  .btn-tactile:active {
+    transform: scale(0.94);
+    filter: brightness(0.85);
   }
 
-  .app-netflix { background: linear-gradient(180deg, #e50914 0%, #b20710 100%); }
-  .app-prime { background: linear-gradient(180deg, #00a8e1 0%, #00719c 100%); }
-  .app-disney { background: linear-gradient(180deg, #113ccf 0%, #0a2380 100%); }
-  .app-youtube { background: linear-gradient(180deg, #ff0000 0%, #990000 100%); }
+  .btn-blue {
+    background: var(--accent-blue);
+    border: none;
+    color: #fff;
+  }
 
-  /* REALISTIC 3D D-PAD RING */
+  /* DPAD */
   .dpad-container {
     align-self: center;
     position: relative;
-    width: 196px;
-    height: 196px;
-    margin: 4px 0;
+    width: 186px;
+    height: 186px;
+    margin: 6px 0;
   }
 
-  .dpad-outer-ring {
+  .dpad-ring {
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    background: radial-gradient(circle, #25282e 0%, #17181c 70%, #0f1013 100%);
-    border: 2px solid #363942;
-    box-shadow: 
-      0 8px 20px rgba(0,0,0,0.7),
-      inset 0 2px 3px rgba(255,255,255,0.15),
-      inset 0 -2px 5px rgba(0,0,0,0.8);
+    background: radial-gradient(circle, #22262f 0%, #111318 70%, #0b0c0f 100%);
+    border: 1.5px solid var(--border-color);
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.6);
   }
 
   .dpad-btn {
     position: absolute;
     background: none;
     border: none;
-    color: #c2c5cc;
-    font-size: 16px;
+    color: #d1d5db;
+    font-size: 18px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: color 0.1s, transform 0.08s;
-    z-index: 2;
-  }
-
-  .dpad-btn:active {
-    color: var(--accent-orange);
-    transform: scale(0.9);
-  }
-
-  .dpad-up { top: 12px; left: 50%; transform: translateX(-50%); width: 50px; height: 38px; }
-  .dpad-down { bottom: 12px; left: 50%; transform: translateX(-50%); width: 50px; height: 38px; }
-  .dpad-left { left: 12px; top: 50%; transform: translateY(-50%); width: 38px; height: 50px; }
-  .dpad-right { right: 12px; top: 50%; transform: translateY(-50%); width: 38px; height: 50px; }
-
-  .dpad-center-ok {
-    width: 76px;
-    height: 76px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #3d424b 0%, #1f2126 100%);
-    border: 1px solid #525761;
-    color: #fff;
-    font-size: 16px;
-    font-weight: 900;
-    letter-spacing: 0.5px;
-    box-shadow: 
-      0 4px 10px rgba(0,0,0,0.6),
-      inset 0 1px 2px rgba(255,255,255,0.25),
-      inset 0 -2px 4px rgba(0,0,0,0.6);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 3;
-    transition: transform 0.08s, filter 0.08s;
-  }
-
-  .dpad-center-ok:active {
-    transform: scale(0.93);
-    box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
-    filter: brightness(0.85);
-  }
-
-  /* Nav Controls Row (Back, Home, Menu) */
-  .nav-controls-row {
-    display: flex;
-    justify-content: space-evenly;
-    align-items: center;
-  }
-
-  .btn-circle-nav {
     width: 44px;
     height: 44px;
+  }
+
+  .dpad-btn:active { color: var(--accent-blue); transform: scale(0.9); }
+  .dpad-up { top: 8px; left: 50%; transform: translateX(-50%); }
+  .dpad-down { bottom: 8px; left: 50%; transform: translateX(-50%); }
+  .dpad-left { left: 8px; top: 50%; transform: translateY(-50%); }
+  .dpad-right { right: 8px; top: 50%; transform: translateY(-50%); }
+
+  .dpad-center-ok {
+    width: 74px;
+    height: 74px;
     border-radius: 50%;
-    font-size: 14px;
-  }
-
-  /* Dual Rocker Switches (Volume & Channel) */
-  .rockers-section {
+    background: linear-gradient(180deg, #333842 0%, #181a20 100%);
+    border: 1px solid var(--border-color);
+    color: #fff;
+    font-size: 18px;
+    font-weight: 900;
+    cursor: pointer;
     display: flex;
-    justify-content: space-around;
     align-items: center;
-    background: rgba(0,0,0,0.25);
-    border-radius: 22px;
-    padding: 8px 12px;
-    border: 1px solid rgba(255,255,255,0.04);
+    justify-content: center;
   }
 
+  .dpad-center-ok:active { transform: scale(0.92); }
+
+  /* ROCKERS */
   .rocker-unit {
     display: flex;
     flex-direction: column;
     align-items: center;
-    background: linear-gradient(180deg, #2b2e35 0%, #191b1f 100%);
+    background: var(--card-bg);
     border-radius: 18px;
-    border: 1px solid #3c4048;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.12);
+    border: 1px solid var(--border-color);
+    width: 66px;
     overflow: hidden;
-    width: 58px;
   }
 
   .rocker-btn {
@@ -395,220 +191,41 @@
     height: 42px;
     background: none;
     border: none;
-    color: #e2e4e9;
-    font-size: 16px;
-    font-weight: 800;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.1s, transform 0.08s;
-  }
-
-  .rocker-btn:active {
-    background: rgba(255,149,0,0.2);
-    color: var(--accent-orange);
-  }
-
-  .rocker-label {
-    font-size: 9px;
-    font-weight: 800;
-    color: #838996;
-    letter-spacing: 0.5px;
-    padding: 2px 0;
-    text-transform: uppercase;
-  }
-
-  .rocker-divider {
-    width: 80%;
-    height: 1px;
-    background: rgba(255,255,255,0.08);
-  }
-
-  .btn-mute {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    font-size: 15px;
-  }
-
-  /* Color Buttons Row */
-  .color-buttons-row {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-  }
-
-  .btn-color {
-    width: 48px;
-    height: 24px;
-    border-radius: 12px;
-    border: 1px solid rgba(255,255,255,0.2);
-    cursor: pointer;
-    box-shadow: 0 3px 6px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.3);
-    transition: transform 0.08s, filter 0.08s;
-  }
-
-  .btn-color:active {
-    transform: scale(0.9);
-    filter: brightness(0.8);
-  }
-
-  .btn-color-red { background: linear-gradient(180deg, #ff453a 0%, #c01e15 100%); }
-  .btn-color-green { background: linear-gradient(180deg, #32d74b 0%, #1e8e2e 100%); }
-  .btn-color-yellow { background: linear-gradient(180deg, #ffd60a 0%, #b89a00 100%); }
-  .btn-color-blue { background: linear-gradient(180deg, #0a84ff 0%, #0051b3 100%); }
-
-  /* Number Pad Grid */
-  .numpad-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    padding: 10px;
-    background: rgba(0,0,0,0.3);
-    border-radius: 20px;
-    border: 1px solid rgba(255,255,255,0.04);
-  }
-
-  .num-btn {
-    height: 42px;
-    border-radius: 12px;
-    font-size: 16px;
-    font-weight: 700;
-  }
-
-  .num-aux {
-    font-size: 10px;
-    letter-spacing: 0.5px;
-    color: #a0a5b0;
-  }
-
-  /* --- SETTINGS TAB --- */
-  .settings-container {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-  }
-
-  .section-title {
-    font-size: 11px;
-    font-weight: 700;
-    color: #808696;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-left: 6px;
-  }
-
-  .settings-card {
-    background: #17191d;
-    border-radius: 18px;
-    border: 1px solid rgba(255,255,255,0.06);
-    overflow: hidden;
-  }
-
-  .settings-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 14px 16px;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
-    cursor: pointer;
-    font-size: 14px;
-  }
-
-  .settings-item:last-child {
-    border-bottom: none;
-  }
-
-  .settings-item .sub {
-    font-size: 12px;
-    color: #7b808e;
-  }
-
-  .settings-item .ico {
-    font-size: 18px;
-  }
-
-  .brand-badge {
-    background: rgba(255,149,0,0.15);
-    color: var(--accent-orange);
-    font-size: 11px;
-    font-weight: 700;
-    padding: 4px 8px;
-    border-radius: 8px;
-    margin-left: auto;
-  }
-
-  input.ip-input {
-    flex: 1;
-    background: none;
-    border: none;
     color: #fff;
-    font-size: 14px;
-    outline: none;
-  }
-
-  /* PAIRING OVERLAY */
-  .pairing-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(10, 11, 13, 0.95);
-    backdrop-filter: blur(12px);
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 30px;
-    gap: 20px;
-    z-index: 10;
-  }
-
-  .pairing-overlay.show {
-    display: flex;
-  }
-
-  .pulse-ring {
-    position: relative;
-    width: 110px;
-    height: 110px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .pulse-ring .ring {
-    position: absolute;
-    inset: 0;
-    border: 2px solid var(--accent-orange);
-    border-radius: 50%;
-    animation: expand 1.6s ease-out infinite;
-  }
-
-  .pulse-ring .ring:nth-child(2) { animation-delay: 0.5s; }
-  .pulse-ring .ring:nth-child(3) { animation-delay: 1.0s; }
-
-  @keyframes expand {
-    0% { transform: scale(0.5); opacity: 0.8; }
-    100% { transform: scale(1.5); opacity: 0; }
-  }
-
-  .pairing-code {
-    font-family: ui-monospace, monospace;
-    font-size: 32px;
+    font-size: 16px;
     font-weight: 800;
-    color: var(--accent-orange);
-    background: rgba(255, 149, 0, 0.1);
-    border: 1px solid rgba(255, 149, 0, 0.3);
-    padding: 12px 24px;
-    border-radius: 16px;
-    letter-spacing: 6px;
+    cursor: pointer;
   }
+
+  .rocker-btn:active { color: var(--accent-blue); }
+
+  /* APPS */
+  .apps-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .app-pill {
+    height: 38px;
+    border-radius: 12px;
+    border: none;
+    font-weight: 800;
+    font-size: 10px;
+    color: #fff;
+    cursor: pointer;
+  }
+
+  .app-netflix { background: linear-gradient(180deg, #e50914 0%, #b20710 100%); }
+  .app-prime { background: linear-gradient(180deg, #00a8e1 0%, #00719c 100%); }
+  .app-disney { background: linear-gradient(180deg, #113ccf 0%, #0a2380 100%); }
+  .app-youtube { background: linear-gradient(180deg, #ff0000 0%, #990000 100%); }
 
   /* TAB BAR */
   .tab-bar {
-    height: 62px;
-    background: #111215;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    height: 64px;
+    background: #0d0f14;
+    border-top: 1px solid var(--border-color);
     display: flex;
   }
 
@@ -616,7 +233,7 @@
     flex: 1;
     background: none;
     border: none;
-    color: #656a76;
+    color: #6c727e;
     font-size: 11px;
     font-weight: 700;
     display: flex;
@@ -625,218 +242,146 @@
     justify-content: center;
     gap: 4px;
     cursor: pointer;
-    transition: color 0.15s;
   }
 
-  .tab-item.active {
-    color: var(--accent-orange);
-  }
-
-  .tab-item .tab-ico {
-    font-size: 20px;
-  }
+  .tab-item.active { color: var(--accent-blue); }
+  .tab-item .tab-ico { font-size: 20px; }
 </style>
 </head>
 <body>
 
 <div class="phone-frame">
-  <!-- Status Bar / Header -->
+  <!-- Status Header -->
   <div class="status-header">
-    <span class="brand-title">📺 MANDO UNIVERSAL</span>
-    <span id="conn-status" style="color: #34c759;">● ONLINE</span>
+    <span>Mando Universal</span>
+    <span style="color: var(--accent-green);">● Conectado</span>
   </div>
 
   <div class="screen-body">
-    <!-- REMOTE TAB -->
+    <!-- TAB 1: REMOTE VIEW -->
     <div class="view active" id="view-remote">
-      <div class="remote-shell">
-        <!-- Emitter LED + Brand -->
-        <div class="remote-header">
-          <div class="ir-led" id="led-indicator"></div>
-          <div class="remote-brand">UNIVERSAL SMART CONTROL</div>
-          <div style="width: 10px;"></div>
+      <!-- Connected Device Card -->
+      <div class="card" style="flex-direction: row; align-items: center;">
+        <span style="font-size: 24px;">📺</span>
+        <div style="flex: 1;">
+          <div style="font-size: 14px; font-weight: 700;">Samsung Smart TV</div>
+          <div style="font-size: 12px; color: #8e94a0;">192.168.1.42</div>
+        </div>
+        <button class="btn-tactile btn-blue" style="height: 32px; padding: 0 12px; font-size: 11px;" onclick="switchTab('devices')">Cambiar</button>
+      </div>
+
+      <!-- Quick Actions Grid -->
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+        <button class="btn-tactile" style="color: #ff453a;">⏻ Encendido</button>
+        <button class="btn-tactile" style="color: #64d2ff;">📺 Fuente</button>
+        <button class="btn-tactile">🏠 Inicio</button>
+        <button class="btn-tactile">☰ Menú</button>
+        <button class="btn-tactile">↩ Atrás</button>
+        <button class="btn-tactile" style="color: #ff9f0a;">🎙 Asistente</button>
+      </div>
+
+      <!-- Quick Apps -->
+      <div class="apps-grid">
+        <button class="app-pill app-netflix">NETFLIX</button>
+        <button class="app-pill app-prime">prime</button>
+        <button class="app-pill app-disney">Disney+</button>
+        <button class="app-pill app-youtube">YouTube</button>
+      </div>
+
+      <!-- Reusable D-Pad -->
+      <div class="dpad-container">
+        <div class="dpad-ring">
+          <button class="dpad-btn dpad-up">▲</button>
+          <button class="dpad-btn dpad-down">▼</button>
+          <button class="dpad-btn dpad-left">◀</button>
+          <button class="dpad-btn dpad-right">▶</button>
+          <button class="dpad-center-ok">OK</button>
+        </div>
+      </div>
+
+      <!-- Rockers -->
+      <div style="display: flex; justify-content: space-around; align-items: center;">
+        <div class="rocker-unit">
+          <button class="rocker-btn">＋</button>
+          <span style="font-size: 9px; color: #8e94a0; font-weight: 800;">VOL</span>
+          <button class="rocker-btn">−</button>
         </div>
 
-        <!-- Mode Selector (Universal TV Selector) -->
-        <div class="mode-selector">
-          <button class="mode-btn active" onclick="setBrand('SAMSUNG', this)">SAMSUNG</button>
-          <button class="mode-btn" onclick="setBrand('LG WebOS', this)">LG</button>
-          <button class="mode-btn" onclick="setBrand('SONY', this)">SONY</button>
-          <button class="mode-btn" onclick="setBrand('ANDROID TV', this)">ANDROID</button>
-        </div>
+        <button class="btn-tactile" style="width: 52px; height: 52px; border-radius: 50%; font-size: 18px;">🔇</button>
 
-        <!-- Power & Action Top Row -->
-        <div class="top-action-row">
-          <button class="btn-tactile btn-power" onclick="pressKey('POWER')" title="Power">⏻</button>
-          <button class="btn-tactile btn-input" onclick="pressKey('INPUT')">INPUT 📺</button>
-          <button class="btn-tactile btn-settings" onclick="pressKey('SETTINGS')">GEAR ⚙️</button>
-          <button class="btn-tactile btn-assistant" onclick="pressKey('ASSISTANT')" title="Asistente de Voz">🎙</button>
-        </div>
-
-        <!-- Quick Apps Bar -->
-        <div class="apps-grid">
-          <button class="app-pill app-netflix" onclick="pressKey('NETFLIX')">NETFLIX</button>
-          <button class="app-pill app-prime" onclick="pressKey('PRIME')">prime</button>
-          <button class="app-pill app-disney" onclick="pressKey('DISNEY')">Disney+</button>
-          <button class="app-pill app-youtube" onclick="pressKey('YOUTUBE')">YouTube</button>
-        </div>
-
-        <!-- REALISTIC D-PAD -->
-        <div class="dpad-container">
-          <div class="dpad-outer-ring">
-            <button class="dpad-btn dpad-up" onclick="pressKey('UP')">▲</button>
-            <button class="dpad-btn dpad-down" onclick="pressKey('DOWN')">▼</button>
-            <button class="dpad-btn dpad-left" onclick="pressKey('LEFT')">◀</button>
-            <button class="dpad-btn dpad-right" onclick="pressKey('RIGHT')">▶</button>
-            <button class="dpad-center-ok" onclick="pressKey('OK')">OK</button>
-          </div>
-        </div>
-
-        <!-- Navigation Controls (Back, Home, Menu) -->
-        <div class="nav-controls-row">
-          <button class="btn-tactile btn-circle-nav" onclick="pressKey('BACK')" title="Atrás">↩</button>
-          <button class="btn-tactile btn-circle-nav" onclick="pressKey('HOME')" title="Inicio">🏠</button>
-          <button class="btn-tactile btn-circle-nav" onclick="pressKey('MENU')" title="Menú">☰</button>
-        </div>
-
-        <!-- Dual Rockers (Volume & Channel) -->
-        <div class="rockers-section">
-          <!-- Volume Rocker -->
-          <div class="rocker-unit">
-            <button class="rocker-btn" onclick="pressKey('VOL_UP')">＋</button>
-            <div class="rocker-divider"></div>
-            <span class="rocker-label">VOL</span>
-            <div class="rocker-divider"></div>
-            <button class="rocker-btn" onclick="pressKey('VOL_DOWN')">−</button>
-          </div>
-
-          <!-- Mute Center Button -->
-          <button class="btn-tactile btn-mute" onclick="pressKey('MUTE')" title="Silenciar">🔇</button>
-
-          <!-- Channel Rocker -->
-          <div class="rocker-unit">
-            <button class="rocker-btn" onclick="pressKey('CH_UP')">▲</button>
-            <div class="rocker-divider"></div>
-            <span class="rocker-label">CH</span>
-            <div class="rocker-divider"></div>
-            <button class="rocker-btn" onclick="pressKey('CH_DOWN')">▼</button>
-          </div>
-        </div>
-
-        <!-- Color Buttons -->
-        <div class="color-buttons-row">
-          <button class="btn-color btn-color-red" onclick="pressKey('COLOR_RED')"></button>
-          <button class="btn-color btn-color-green" onclick="pressKey('COLOR_GREEN')"></button>
-          <button class="btn-color btn-color-yellow" onclick="pressKey('COLOR_YELLOW')"></button>
-          <button class="btn-color btn-color-blue" onclick="pressKey('COLOR_BLUE')"></button>
-        </div>
-
-        <!-- Numeric Keypad -->
-        <div class="numpad-grid">
-          <button class="btn-tactile num-btn" onclick="pressKey('1')">1</button>
-          <button class="btn-tactile num-btn" onclick="pressKey('2')">2</button>
-          <button class="btn-tactile num-btn" onclick="pressKey('3')">3</button>
-          <button class="btn-tactile num-btn" onclick="pressKey('4')">4</button>
-          <button class="btn-tactile num-btn" onclick="pressKey('5')">5</button>
-          <button class="btn-tactile num-btn" onclick="pressKey('6')">6</button>
-          <button class="btn-tactile num-btn" onclick="pressKey('7')">7</button>
-          <button class="btn-tactile num-btn" onclick="pressKey('8')">8</button>
-          <button class="btn-tactile num-btn" onclick="pressKey('9')">9</button>
-          <button class="btn-tactile num-btn num-aux" onclick="pressKey('INFO')">INFO</button>
-          <button class="btn-tactile num-btn" onclick="pressKey('0')">0</button>
-          <button class="btn-tactile num-btn num-aux" onclick="pressKey('GUIDE')">GUIDE</button>
+        <div class="rocker-unit">
+          <button class="rocker-btn">▲</button>
+          <span style="font-size: 9px; color: #8e94a0; font-weight: 800;">CH</span>
+          <button class="rocker-btn">▼</button>
         </div>
       </div>
     </div>
 
-    <!-- SETTINGS TAB -->
+    <!-- TAB 2: DEVICES VIEW -->
+    <div class="view" id="view-devices">
+      <div style="font-size: 20px; font-weight: 800;">Televisores</div>
+      <button class="btn-tactile btn-blue" style="height: 48px; font-size: 14px;">📡 Buscar televisores</button>
+      
+      <div class="card">
+        <div style="font-size: 12px; font-weight: 800; color: #8e94a0;">DISPOSITIVO ACTUAL</div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 24px;">📺</span>
+          <div>
+            <div style="font-size: 15px; font-weight: 700;">Samsung Smart TV</div>
+            <div style="font-size: 12px; color: #8e94a0;">192.168.1.42</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="font-size: 12px; font-weight: 800; color: #8e94a0;">IP MANUAL</div>
+        <input style="background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); color: #fff; padding: 10px; border-radius: 12px; outline: none;" value="192.168.1.42" placeholder="192.168.1.X">
+        <button class="btn-tactile btn-blue">Conectar por IP</button>
+      </div>
+    </div>
+
+    <!-- TAB 3: SETTINGS VIEW -->
     <div class="view" id="view-settings">
-      <div class="settings-container">
-        <div>
-          <div class="section-title">Televisores Detectados</div>
-          <div class="settings-card" style="margin-top: 6px;">
-            <div class="settings-item" onclick="scanDevices()">
-              <span class="ico">📡</span>
-              <div>
-                <div>Buscar Smart TVs</div>
-                <div class="sub" id="scan-sub">Escaneo en red Wi-Fi local</div>
-              </div>
-            </div>
-            <div class="settings-item" onclick="openPairing('Samsung Smart TV 7 Series')">
-              <span class="ico">📺</span>
-              <div>
-                <div>Samsung Smart TV</div>
-                <div class="sub">192.168.1.42</div>
-              </div>
-              <span class="brand-badge">SAMSUNG</span>
-            </div>
-            <div class="settings-item" onclick="openPairing('LG OLED WebOS TV')">
-              <span class="ico">📺</span>
-              <div>
-                <div>LG OLED WebOS</div>
-                <div class="sub">192.168.1.88</div>
-              </div>
-              <span class="brand-badge">LG</span>
-            </div>
-            <div class="settings-item" onclick="openPairing('Sony Bravia Android TV')">
-              <span class="ico">📺</span>
-              <div>
-                <div>Sony Bravia TV</div>
-                <div class="sub">192.168.1.105</div>
-              </div>
-              <span class="brand-badge">SONY</span>
-            </div>
-          </div>
-        </div>
+      <div style="font-size: 20px; font-weight: 800;">Ajustes</div>
 
-        <div>
-          <div class="section-title">Dirección IP Manual</div>
-          <div class="settings-card" style="margin-top: 6px;">
-            <div class="settings-item">
-              <span class="ico">🌐</span>
-              <input class="ip-input" value="192.168.1.42" placeholder="Ej: 192.168.1.100">
-            </div>
-          </div>
+      <div class="card">
+        <div style="font-size: 12px; font-weight: 800; color: #8e94a0;">PREFERENCIAS</div>
+        <div style="display: flex; justify-content: space-between; font-size: 14px;">
+          <span>Vibración (Háptica)</span>
+          <span style="color: var(--accent-green);">ON</span>
         </div>
+        <div style="display: flex; justify-content: space-between; font-size: 14px;">
+          <span>Reconexión automática</span>
+          <span style="color: var(--accent-green);">ON</span>
+        </div>
+      </div>
 
-        <div>
-          <div class="section-title">Estado del Mando</div>
-          <div class="settings-card" style="margin-top: 6px;">
-            <div class="settings-item">
-              <span style="width:10px;height:10px;border-radius:50%;background:#34c759;"></span>
-              <div>Conectado a Smart TV</div>
-            </div>
-            <div class="settings-item" style="color: var(--accent-orange);" onclick="openPairing('Smart TV')">
-              Conectar / Vincular Nuevo TV
-            </div>
-          </div>
+      <div class="card">
+        <div style="font-size: 12px; font-weight: 800; color: #8e94a0;">DIAGNÓSTICO</div>
+        <div style="display: flex; justify-content: space-between; font-size: 13px; color: #8e94a0;">
+          <span>Versión:</span> <span style="color: #fff;">1.0 (Build 1)</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 13px; color: #8e94a0;">
+          <span>Bundle ID:</span> <span style="color: #fff;">com.local.xiaomiremote</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 13px; color: #8e94a0;">
+          <span>Estado de Red:</span> <span style="color: var(--accent-green);">Conectado</span>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- PAIRING OVERLAY -->
-  <div class="pairing-overlay" id="pairing-modal">
-    <div class="pulse-ring">
-      <div class="ring"></div>
-      <div class="ring"></div>
-      <div class="ring"></div>
-      <span style="font-size: 42px;">📺</span>
-    </div>
-    <div style="font-size: 18px; font-weight: 800;" id="pairing-title">Vinculando con Smart TV</div>
-    <div style="font-size: 13px; color: #8e94a0; text-align: center;">Introduce el código de seguridad que aparece en la pantalla del televisor:</div>
-    <div class="pairing-code">749201</div>
-    <button class="btn-tactile" style="width: 100%; height: 46px; background: var(--accent-orange); color: #000; font-size: 15px; border-radius: 14px;" onclick="closePairing()">Confirmar Vinculación</button>
-    <button style="background: none; border: none; color: #8e94a0; font-size: 14px; cursor: pointer;" onclick="closePairing()">Cancelar</button>
-  </div>
-
-  <!-- TAB BAR -->
+  <!-- Tab Bar -->
   <div class="tab-bar">
-    <button class="tab-item active" id="tab-btn-remote" onclick="switchTab('remote')">
+    <button class="tab-item active" id="tab-remote" onclick="switchTab('remote')">
       <span class="tab-ico">📱</span>
       <span>Mando</span>
     </button>
-    <button class="tab-item" id="tab-btn-settings" onclick="switchTab('settings')">
+    <button class="tab-item" id="tab-devices" onclick="switchTab('devices')">
+      <span class="tab-ico">📺</span>
+      <span>Dispositivos</span>
+    </button>
+    <button class="tab-item" id="tab-settings" onclick="switchTab('settings')">
       <span class="tab-ico">⚙️</span>
       <span>Ajustes</span>
     </button>
@@ -844,42 +389,12 @@
 </div>
 
 <script>
-  function pressKey(key) {
-    // LED blink feedback
-    const led = document.getElementById('led-indicator');
-    led.classList.add('active');
-    setTimeout(() => led.classList.remove('active'), 200);
-  }
-
-  function setBrand(brand, btn) {
-    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    pressKey('BRAND_' + brand);
-  }
-
   function switchTab(tab) {
-    const isRemote = tab === 'remote';
-    document.getElementById('view-remote').classList.toggle('active', isRemote);
-    document.getElementById('view-settings').classList.toggle('active', !isRemote);
-    document.getElementById('tab-btn-remote').classList.toggle('active', isRemote);
-    document.getElementById('tab-btn-settings').classList.toggle('active', !isRemote);
-  }
-
-  function scanDevices() {
-    const sub = document.getElementById('scan-sub');
-    sub.textContent = 'Buscando dispositivos en la red...';
-    setTimeout(() => {
-      sub.textContent = 'Escaneo completado. 3 Smart TVs encontrados.';
-    }, 2000);
-  }
-
-  function openPairing(tvName) {
-    if(tvName) document.getElementById('pairing-title').textContent = 'Vinculando ' + tvName;
-    document.getElementById('pairing-modal').classList.add('show');
-  }
-
-  function closePairing() {
-    document.getElementById('pairing-modal').classList.remove('show');
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+    
+    document.getElementById('view-' + tab).classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
   }
 </script>
 </body>

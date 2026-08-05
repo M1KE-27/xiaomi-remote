@@ -19,6 +19,7 @@ info()  { printf '\033[36m%s\033[0m\n' "$1"; }
 
 [ -x "$SIDELOADER" ] || { red "No encuentro sideloader-cli en $SIDELOADER"; exit 1; }
 [ -f "$IPA" ]        || { red "No encuentro el IPA en $IPA"; exit 1; }
+IPA="$(realpath "$IPA")"
 
 # 1) Asegurar anisette en marcha (podman/docker)
 CONTAINER_TOOL=$(command -v podman 2>/dev/null || command -v docker 2>/dev/null || echo "")

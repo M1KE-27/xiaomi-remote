@@ -1,158 +1,188 @@
 import SwiftUI
 
-struct SettingsView: View {
-    @EnvironmentObject var tv: TVState
-    @State private var hostInput: String = ""
-    @FocusState private var hostFocused: Bool
+public struct SettingsView: View {
+    @EnvironmentObject private var appState: AppState
 
-    var body: some View {
-        NavigationStack {
-            ZStack {
-                Color.black.ignoresSafeArea()
-                Form {
-                    discoverySection
-                    manualSection
-                    connectionSection
-                    infoSection
+    public init() {}
+
+    public var body: some View {
+        ZStack {
+            // Main Graphite Background #090B0F
+            Color(red: 0.035, green: 0.043, blue: 0.059)
+                .ignoresSafeArea()
+
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 20) {
+                    header
+                    connectionGroup
+                    feedbackGroup
+                    appearanceGroup
+                    diagnosticsGroup
+                    appInfoGroup
                 }
-                .scrollContentBackground(.hidden)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .frame(maxWidth: 500)
             }
-            .navigationTitle("Ajustes")
-            .navigationBarTitleDisplayMode(.inline)
-            .onAppear { hostInput = tv.tvHost }
         }
     }
 
-    // MARK: - Discovery
+    // MARK: - Header
+    private var header: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Ajustes")
+                    .font(.system(size: 24, weight: .black))
+                    .foregroundColor(.white)
+                Text("Preferencias y diagnóstico del mando")
+                    .font(.system(size: 13))
+                    .foregroundColor(.gray)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 4)
+    }
 
-    private var discoverySection: some View {
-        Section("Televisores Detectados") {
-            Button {
-                if tv.discovery.isScanning { tv.stopScan() } else { tv.startScan() }
+    // MARK: - Connection Group
+    private var connectionGroup: some View {
+        settingsCard(title: "CONEXIÓN") {
+            Toggle(isOn: $appState.autoReconnect) {
+                settingRowLabel(title: "Reconexión automática", subtitle: "Reconecta al abrir la app si está vinculada", icon: "arrow.triangle.2.circlepath")
+            }
+            .tint(Color(red: 0.0, green: 0.48, blue: 1.0))
+
+            Divider().background(Color.white.opacity(0.08))
+
+            Toggle(isOn: $appState.keepScreenAwake) {
+                settingRowLabel(title: "Mantener pantalla activa", subtitle: "Evita que el iPhone apague la pantalla", icon: "sun.max.fill")
+            }
+            .tint(Color(red: 0.0, green: 0.48, blue: 1.0))
+        }
+    }
+
+    // MARK: - Feedback Group
+    private var feedbackGroup: some View {
+        settingsCard(title: "FEEDBACK TÁCTIL Y SONORO") {
+            Toggle(isOn: $appState.hapticFeedbackEnabled) {
+                settingRowLabel(title: "Vibración (Háptica)", subtitle: "Siente una respuesta al pulsar cada botón", icon: "waveform")
+            }
+            .tint(Color(red: 0.0, green: 0.48, blue: 1.0))
+
+            Divider().background(Color.white.opacity(0.08))
+
+            Toggle(isOn: $appState.soundFeedbackEnabled) {
+                settingRowLabel(title: "Sonidos", subtitle: "Emitir tono de confirmación al pulsar", icon: "speaker.wave.2.fill")
+            }
+            .tint(Color(red: 0.0, green: 0.48, blue: 1.0))
+        }
+    }
+
+    // MARK: - Appearance Group
+    private var appearanceGroup: some View {
+        settingsCard(title: "APARIENCIA Y MARCA") {
+            Picker(selection: $appState.selectedBrand) {
+                ForEach(TVBrand.allCases) { brand in
+                    Text(brand.rawValue).tag(brand)
+                }
             } label: {
-                HStack(spacing: 12) {
-                    RadarIcon(active: tv.discovery.isScanning)
-                        .frame(width: 26, height: 26)
-                    Text(tv.discovery.isScanning ? "Buscando..." : "Buscar dispositivos")
-                    Spacer()
-                    if tv.discovery.isScanning {
-                        ProgressView().tint(.orange)
-                    }
-                }
+                settingRowLabel(title: "Marca predeterminada", subtitle: "Perfil de comandos principal", icon: "tv.fill")
             }
-            .foregroundColor(.primary)
+            .pickerStyle(.menu)
+            .tint(Color(red: 0.0, green: 0.48, blue: 1.0))
+        }
+    }
 
-            ForEach(tv.discovery.devices) { device in
-                Button {
-                    hostInput = device.host
-                    tv.select(device)
-                } label: {
-                    HStack {
-                        Image(systemName: "tv.fill").foregroundColor(.orange)
-                        VStack(alignment: .leading) {
-                            Text(device.name).foregroundColor(.primary)
-                            Text(device.host).font(.caption).foregroundColor(.secondary)
-                        }
-                        Spacer()
-                        Image(systemName: "chevron.right").foregroundColor(.secondary)
-                    }
-                }
-            }
-
-            if tv.discovery.isScanning && tv.discovery.devices.isEmpty {
-                Text("Asegúrate de que el TV está encendido y en la misma WiFi.")
-                    .font(.caption).foregroundColor(.secondary)
+    // MARK: - Diagnostics Group
+    private var diagnosticsGroup: some View {
+        settingsCard(title: "DIAGNÓSTICO DEL SISTEMA") {
+            diagRow(title: "Estado de Red", value: appState.connectionStatus.statusText, valueColor: appState.connectionStatus.statusColor)
+            Divider().background(Color.white.opacity(0.08))
+            diagRow(title: "Televisor Seleccionado", value: appState.connectedDevice?.name ?? "Ninguno")
+            Divider().background(Color.white.opacity(0.08))
+            diagRow(title: "IP Configurada", value: appState.connectedDevice?.host ?? appState.manualIPInput)
+            Divider().background(Color.white.opacity(0.08))
+            diagRow(title: "Última Conexión", value: formattedDate(appState.lastConnectionDate))
+            if let err = appState.lastError {
+                Divider().background(Color.white.opacity(0.08))
+                diagRow(title: "Último Error", value: err, valueColor: .red)
             }
         }
     }
 
-    // MARK: - Manual entry
+    // MARK: - App Info Group
+    private var appInfoGroup: some View {
+        settingsCard(title: "INFORMACIÓN DE LA APP") {
+            diagRow(title: "Aplicación", value: "Mando Universal")
+            Divider().background(Color.white.opacity(0.08))
+            diagRow(title: "Versión", value: "1.0")
+            Divider().background(Color.white.opacity(0.08))
+            diagRow(title: "Build", value: "1")
+            Divider().background(Color.white.opacity(0.08))
+            diagRow(title: "Bundle ID", value: "com.local.xiaomiremote")
+        }
+    }
 
-    private var manualSection: some View {
-        Section("IP manual") {
-            HStack {
-                Image(systemName: "network").foregroundColor(.secondary)
-                TextField("IP del TV (ej: 192.168.3.17)", text: $hostInput)
-                    .keyboardType(.numbersAndPunctuation)
-                    .autocorrectionDisabled()
-                    .focused($hostFocused)
+    // MARK: - Helper Views
+    private func settingsCard<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundColor(.gray)
+                .padding(.horizontal, 4)
+
+            VStack(spacing: 12) {
+                content()
+            }
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color(red: 0.082, green: 0.098, blue: 0.125))
+                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.white.opacity(0.08), lineWidth: 1))
+            )
+        }
+    }
+
+    private func settingRowLabel(title: String, subtitle: String, icon: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(Color(red: 0.0, green: 0.48, blue: 1.0))
+                .frame(width: 24)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.white)
+                Text(subtitle)
+                    .font(.system(size: 11))
+                    .foregroundColor(.gray)
             }
         }
     }
 
-    // MARK: - Connection
-
-    private var connectionSection: some View {
-        Section("Conexión") {
-            HStack {
-                Circle().fill(statusColor).frame(width: 10, height: 10)
-                Text(tv.connectionStateLabel).foregroundColor(.primary)
-            }
-
-            Button(tv.isConnected ? "Desconectar" : "Conectar / Emparejar") {
-                hostFocused = false
-                if tv.isConnected {
-                    tv.disconnect()
-                } else {
-                    tv.saveHost(hostInput)
-                    tv.connect()
-                }
-            }
-            .foregroundColor(tv.isConnected ? .red : .orange)
-
-            Button("Olvidar emparejamiento") { tv.forgetPairing() }
-                .foregroundColor(.secondary)
+    private func diagRow(title: String, value: String, valueColor: Color = .white) -> some View {
+        HStack {
+            Text(title)
+                .font(.system(size: 13))
+                .foregroundColor(.gray)
+            Spacer()
+            Text(value)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(valueColor)
+                .lineLimit(1)
         }
     }
 
-    private var infoSection: some View {
-        Section("Info") {
-            LabeledContent("Emparejar", value: "Puerto 6467")
-            LabeledContent("Control", value: "Puerto 6466")
-            LabeledContent("Protocolo", value: "Android TV Remote v2")
-        }
-    }
-
-    private var statusColor: Color {
-        switch tv.client?.state {
-        case .connected: return .green
-        case .connecting: return .yellow
-        case .failed: return .red
-        default: return .gray
-        }
+    private func formattedDate(_ date: Date?) -> String {
+        guard let date = date else { return "Nunca" }
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.timeStyle = .medium
+        return formatter.string(from: date)
     }
 }
 
-/// Animated radar glyph that pulses while scanning.
-struct RadarIcon: View {
-    let active: Bool
-    @State private var pulse = false
-
-    var body: some View {
-        ZStack {
-            Image(systemName: "dot.radiowaves.left.and.right")
-                .foregroundColor(active ? .orange : .secondary)
-            if active {
-                Circle()
-                    .stroke(Color.orange.opacity(0.6), lineWidth: 2)
-                    .scaleEffect(pulse ? 1.8 : 0.6)
-                    .opacity(pulse ? 0 : 0.8)
-            }
-        }
-        .onChange(of: active) { now in
-            pulse = false
-            if now {
-                withAnimation(.easeOut(duration: 1.1).repeatForever(autoreverses: false)) {
-                    pulse = true
-                }
-            }
-        }
-        .onAppear {
-            if active {
-                withAnimation(.easeOut(duration: 1.1).repeatForever(autoreverses: false)) {
-                    pulse = true
-                }
-            }
-        }
-    }
+#Preview {
+    SettingsView()
+        .environmentObject(AppState())
 }

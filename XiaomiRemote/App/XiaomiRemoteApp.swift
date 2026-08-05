@@ -2,12 +2,12 @@ import SwiftUI
 
 @main
 struct XiaomiRemoteApp: App {
-    @StateObject private var tvState = TVState()
+    @StateObject private var appState = AppState()
 
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environmentObject(tvState)
+                .environmentObject(appState)
         }
     }
 }
