@@ -1,15 +1,15 @@
 import SwiftUI
 import UIKit
 
-public struct DirectionPad: View {
-    public let onCommand: (RemoteCommand) -> Void
+struct DirectionPad: View {
+    let onCommand: (RemoteCommand) -> Void
     @State private var activeDirection: RemoteCommand? = nil
 
-    public init(onCommand: @escaping (RemoteCommand) -> Void) {
+    init(onCommand: @escaping (RemoteCommand) -> Void) {
         self.onCommand = onCommand
     }
 
-    public var body: some View {
+    var body: some View {
         ZStack {
             // Outer Metallic D-Pad Ring
             Circle()
@@ -115,9 +115,8 @@ public struct DirectionPad: View {
 }
 
 // MARK: - Pressed Scale Button Style
-public struct PressedScaleButtonStyle: ButtonStyle {
-    public init() {}
-    public func makeBody(configuration: Configuration) -> some View {
+struct PressedScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.92 : 1.0)
             .brightness(configuration.isPressed ? -0.1 : 0.0)

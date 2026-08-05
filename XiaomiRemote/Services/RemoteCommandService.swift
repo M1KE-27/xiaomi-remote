@@ -7,7 +7,7 @@ private let logger = os.Logger(subsystem: "com.local.xiaomiremote", category: "R
 
 // MARK: - Remote Command Service Protocol
 @MainActor
-public protocol RemoteCommandService: ObservableObject {
+protocol RemoteCommandService: ObservableObject {
     var connectionStatus: ConnectionStatus { get }
     func connect(to device: TVDevice)
     func disconnect()
@@ -16,16 +16,16 @@ public protocol RemoteCommandService: ObservableObject {
 
 // MARK: - Network Remote Service (Real Production Implementation)
 @MainActor
-public final class NetworkRemoteService: RemoteCommandService, ObservableObject {
-    @Published public private(set) var connectionStatus: ConnectionStatus = .disconnected
+final class NetworkRemoteService: RemoteCommandService, ObservableObject {
+    @Published private(set) var connectionStatus: ConnectionStatus = .disconnected
 
     private var activeDevice: TVDevice?
     private var remoteClient: TVRemoteClient?
     private var clientCancellable: AnyCancellable?
 
-    public init() {}
+    init() {}
 
-    public func connect(to device: TVDevice) {
+    func connect(to device: TVDevice) {
         logger.info("Solicitando conexión a \(device.name, privacy: .public) (\(device.host, privacy: .public))")
         activeDevice = device
         disconnectClient()
@@ -55,7 +55,7 @@ public final class NetworkRemoteService: RemoteCommandService, ObservableObject 
         client.connect()
     }
 
-    public func disconnect() {
+    func disconnect() {
         logger.info("Desconectando cliente...")
         disconnectClient()
         connectionStatus = .disconnected
@@ -68,7 +68,7 @@ public final class NetworkRemoteService: RemoteCommandService, ObservableObject 
         remoteClient = nil
     }
 
-    public func sendCommand(_ command: RemoteCommand) {
+    func sendCommand(_ command: RemoteCommand) {
         guard connectionStatus == .connected, let client = remoteClient else {
             logger.warning("Intento de envío de comando sin conexión activa: \(String(describing: command))")
             return
@@ -86,15 +86,15 @@ public final class NetworkRemoteService: RemoteCommandService, ObservableObject 
 
 // MARK: - Mock Remote Service (For SwiftUI Previews and Offline Testing)
 @MainActor
-public final class MockRemoteService: RemoteCommandService, ObservableObject {
-    @Published public private(set) var connectionStatus: ConnectionStatus = .disconnected
-    public var lastSentCommand: RemoteCommand?
+final class MockRemoteService: RemoteCommandService, ObservableObject {
+    @Published private(set) var connectionStatus: ConnectionStatus = .disconnected
+    var lastSentCommand: RemoteCommand?
 
-    public init(initialStatus: ConnectionStatus = .connected) {
+    init(initialStatus: ConnectionStatus = .connected) {
         self.connectionStatus = initialStatus
     }
 
-    public func connect(to device: TVDevice) {
+    func connect(to device: TVDevice) {
         connectionStatus = .connecting
         Task {
             try? await Task.sleep(nanoseconds: 500_000_000)
@@ -102,11 +102,11 @@ public final class MockRemoteService: RemoteCommandService, ObservableObject {
         }
     }
 
-    public func disconnect() {
+    func disconnect() {
         connectionStatus = .disconnected
     }
 
-    public func sendCommand(_ command: RemoteCommand) {
+    func sendCommand(_ command: RemoteCommand) {
         lastSentCommand = command
         logger.info("[MOCK] Comando enviado: \(String(describing: command))")
     }

@@ -1,12 +1,10 @@
 import SwiftUI
 import UIKit
 
-public struct RemoteView: View {
+struct RemoteView: View {
     @EnvironmentObject private var appState: AppState
 
-    public init() {}
-
-    public var body: some View {
+    var body: some View {
         ZStack {
             // Main Graphite Background #090B0F
             Color(red: 0.035, green: 0.043, blue: 0.059)
@@ -28,7 +26,7 @@ public struct RemoteView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
-                .frame(maxWidth: 500) // Adaptive maxWidth for iPad/large screens
+                .frame(maxWidth: 500)
             }
         }
     }
@@ -98,7 +96,7 @@ public struct RemoteView: View {
             Spacer()
 
             Button(action: {
-                appState.selectedTab = 1 // Switch to Devices tab
+                appState.selectedTab = 1
             }) {
                 HStack(spacing: 4) {
                     Text("Cambiar")
@@ -120,7 +118,7 @@ public struct RemoteView: View {
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(Color(red: 0.082, green: 0.098, blue: 0.125)) // Card #151920
+                .fill(Color(red: 0.082, green: 0.098, blue: 0.125))
                 .overlay(
                     RoundedRectangle(cornerRadius: 20)
                         .stroke(Color.white.opacity(0.08), lineWidth: 1)

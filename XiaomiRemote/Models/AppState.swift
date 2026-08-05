@@ -7,54 +7,54 @@ import os
 private let logger = os.Logger(subsystem: "com.local.xiaomiremote", category: "AppState")
 
 @MainActor
-public final class AppState: ObservableObject {
+final class AppState: ObservableObject {
     // MARK: - Navigation State
-    @Published public var selectedTab: Int = 0
+    @Published var selectedTab: Int = 0
 
     // MARK: - TV Devices & Connection State
-    @Published public var devices: [TVDevice] = []
-    @Published public var connectedDevice: TVDevice? = nil
-    @Published public var connectionStatus: ConnectionStatus = .disconnected
-    @Published public var lastError: String? = nil
-    @Published public var lastConnectionDate: Date? = nil
-    @Published public var isScanning: Bool = false
+    @Published var devices: [TVDevice] = []
+    @Published var connectedDevice: TVDevice? = nil
+    @Published var connectionStatus: ConnectionStatus = .disconnected
+    @Published var lastError: String? = nil
+    @Published var lastConnectionDate: Date? = nil
+    @Published var isScanning: Bool = false
 
     // MARK: - Pairing Sheet State
-    @Published public var showPairingSheet: Bool = false
-    @Published public var pairingCode: String = ""
-    @Published public var pairingClient: PairingClient? = nil
+    @Published var showPairingSheet: Bool = false
+    @Published var pairingCode: String = ""
+    @Published var pairingClient: PairingClient? = nil
 
     // MARK: - UI Controls State
-    @Published public var showNumericKeypad: Bool = false
-    @Published public var manualIPInput: String = ""
+    @Published var showNumericKeypad: Bool = false
+    @Published var manualIPInput: String = ""
 
     // MARK: - Settings Persistence
-    @Published public var hapticFeedbackEnabled: Bool {
+    @Published var hapticFeedbackEnabled: Bool {
         didSet { UserDefaults.standard.set(hapticFeedbackEnabled, forKey: "hapticFeedbackEnabled") }
     }
-    @Published public var soundFeedbackEnabled: Bool {
+    @Published var soundFeedbackEnabled: Bool {
         didSet { UserDefaults.standard.set(soundFeedbackEnabled, forKey: "soundFeedbackEnabled") }
     }
-    @Published public var keepScreenAwake: Bool {
+    @Published var keepScreenAwake: Bool {
         didSet {
             UserDefaults.standard.set(keepScreenAwake, forKey: "keepScreenAwake")
             UIApplication.shared.isIdleTimerDisabled = keepScreenAwake
         }
     }
-    @Published public var autoReconnect: Bool {
+    @Published var autoReconnect: Bool {
         didSet { UserDefaults.standard.set(autoReconnect, forKey: "autoReconnect") }
     }
-    @Published public var selectedBrand: TVBrand {
+    @Published var selectedBrand: TVBrand {
         didSet { UserDefaults.standard.set(selectedBrand.rawValue, forKey: "selectedBrand") }
     }
 
     // MARK: - Services
-    public let networkService = NetworkRemoteService()
-    public let discovery = DeviceDiscovery()
+    let networkService = NetworkRemoteService()
+    let discovery = DeviceDiscovery()
     private var cancellables = Set<AnyCancellable>()
     private var bgTask: UIBackgroundTaskIdentifier = .invalid
 
-    public init() {
+    init() {
         self.hapticFeedbackEnabled = UserDefaults.standard.object(forKey: "hapticFeedbackEnabled") as? Bool ?? true
         self.soundFeedbackEnabled = UserDefaults.standard.object(forKey: "soundFeedbackEnabled") as? Bool ?? false
         self.keepScreenAwake = UserDefaults.standard.object(forKey: "keepScreenAwake") as? Bool ?? false
@@ -118,7 +118,7 @@ public final class AppState: ObservableObject {
 
     // MARK: - Actions
 
-    public func connect(to device: TVDevice) {
+    func connect(to device: TVDevice) {
         saveConnectedDevice(device)
         let pairedKey = "paired_\(device.host)"
         let isAlreadyPaired = UserDefaults.standard.bool(forKey: pairedKey)
@@ -130,18 +130,18 @@ public final class AppState: ObservableObject {
         }
     }
 
-    public func connectManualIP() {
+    func connectManualIP() {
         let ip = manualIPInput.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !ip.isEmpty else { return }
         let device = TVDevice(id: ip, name: "Smart TV (\(ip))", host: ip, brand: selectedBrand)
         connect(to: device)
     }
 
-    public func disconnect() {
+    func disconnect() {
         networkService.disconnect()
     }
 
-    public func forgetDevice(_ device: TVDevice) {
+    func forgetDevice(_ device: TVDevice) {
         UserDefaults.standard.set(false, forKey: "paired_\(device.host)")
         if connectedDevice?.id == device.id {
             disconnect()
@@ -150,7 +150,7 @@ public final class AppState: ObservableObject {
         }
     }
 
-    public func sendCommand(_ command: RemoteCommand) {
+    func sendCommand(_ command: RemoteCommand) {
         if hapticFeedbackEnabled {
             let gen = UIImpactFeedbackGenerator(style: .medium)
             gen.impactOccurred()
@@ -159,16 +159,16 @@ public final class AppState: ObservableObject {
     }
 
     // MARK: - Discovery
-    public func startScan() {
+    func startScan() {
         discovery.start()
     }
 
-    public func stopScan() {
+    func stopScan() {
         discovery.stop()
     }
 
     // MARK: - Pairing
-    public func startPairing(device: TVDevice) {
+    func startPairing(device: TVDevice) {
         pairingCode = ""
         let pc = PairingClient(host: device.host)
         pc.onPaired = { [weak self] in
@@ -188,11 +188,11 @@ public final class AppState: ObservableObject {
         pc.start()
     }
 
-    public func submitPairingCode() {
+    func submitPairingCode() {
         pairingClient?.submitCode(pairingCode)
     }
 
-    public func cancelPairing() {
+    func cancelPairing() {
         pairingClient?.cancel()
         pairingClient = nil
         showPairingSheet = false
@@ -208,21 +208,21 @@ public final class AppState: ObservableObject {
         }
     }
 
-    public func reconnectIfNeeded() {
+    func reconnectIfNeeded() {
         guard autoReconnect, let device = connectedDevice else { return }
         if connectionStatus == .disconnected || connectionStatus.isConnecting == false {
             networkService.connect(to: device)
         }
     }
 
-    public func beginBackgroundHold() {
+    func beginBackgroundHold() {
         endBackgroundHold()
         bgTask = UIApplication.shared.beginBackgroundTask(withName: "tv-keepalive") { [weak self] in
             self?.endBackgroundHold()
         }
     }
 
-    public func endBackgroundHold() {
+    func endBackgroundHold() {
         if bgTask != .invalid {
             UIApplication.shared.endBackgroundTask(bgTask)
             bgTask = .invalid

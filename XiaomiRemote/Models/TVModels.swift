@@ -2,7 +2,7 @@ import Foundation
 import SwiftUI
 
 // MARK: - TV Brand
-public enum TVBrand: String, CaseIterable, Codable, Identifiable {
+enum TVBrand: String, CaseIterable, Codable, Identifiable {
     case samsung = "Samsung"
     case lg = "LG WebOS"
     case sony = "Sony Bravia"
@@ -14,9 +14,9 @@ public enum TVBrand: String, CaseIterable, Codable, Identifiable {
     case appleTV = "Apple TV"
     case universal = "Universal"
 
-    public var id: String { rawValue }
+    var id: String { rawValue }
 
-    public var iconName: String {
+    var iconName: String {
         switch self {
         case .samsung, .lg, .sony, .xiaomi, .tcl, .hisense, .philips, .androidTV, .universal:
             return "tv"
@@ -27,14 +27,14 @@ public enum TVBrand: String, CaseIterable, Codable, Identifiable {
 }
 
 // MARK: - TV Device
-public struct TVDevice: Identifiable, Equatable, Codable {
-    public let id: String
-    public var name: String
-    public var host: String
-    public var brand: TVBrand
-    public var lastConnectedDate: Date?
+struct TVDevice: Identifiable, Equatable, Codable {
+    let id: String
+    var name: String
+    var host: String
+    var brand: TVBrand
+    var lastConnectedDate: Date?
 
-    public init(id: String, name: String, host: String, brand: TVBrand = .androidTV, lastConnectedDate: Date? = nil) {
+    init(id: String, name: String, host: String, brand: TVBrand = .androidTV, lastConnectedDate: Date? = nil) {
         self.id = id
         self.name = name
         self.host = host
@@ -44,23 +44,23 @@ public struct TVDevice: Identifiable, Equatable, Codable {
 }
 
 // MARK: - Connection Status
-public enum ConnectionStatus: Equatable {
+enum ConnectionStatus: Equatable {
     case disconnected
     case connecting
     case connected
     case failed(String)
 
-    public var isConnected: Bool {
+    var isConnected: Bool {
         if case .connected = self { return true }
         return false
     }
 
-    public var isConnecting: Bool {
+    var isConnecting: Bool {
         if case .connecting = self { return true }
         return false
     }
 
-    public var statusText: String {
+    var statusText: String {
         switch self {
         case .disconnected: return "Desconectado"
         case .connecting: return "Conectando…"
@@ -69,7 +69,7 @@ public enum ConnectionStatus: Equatable {
         }
     }
 
-    public var statusColor: Color {
+    var statusColor: Color {
         switch self {
         case .disconnected: return .gray
         case .connecting: return .orange
@@ -80,7 +80,7 @@ public enum ConnectionStatus: Equatable {
 }
 
 // MARK: - Remote Command
-public enum RemoteCommand: Equatable {
+enum RemoteCommand: Equatable {
     case power
     case input
     case settings
@@ -111,7 +111,7 @@ public enum RemoteCommand: Equatable {
     case youtube
     case customLink(String)
 
-    public var androidKeyCode: Int? {
+    var androidKeyCode: Int? {
         switch self {
         case .power: return 26
         case .back: return 4
@@ -141,7 +141,7 @@ public enum RemoteCommand: Equatable {
         }
     }
 
-    public var appDeepLink: String? {
+    var appDeepLink: String? {
         switch self {
         case .netflix: return "https://www.netflix.com/title"
         case .prime: return "https://app.primevideo.com"
