@@ -9,7 +9,14 @@ set -u
 
 APPLE_ID="${APPLE_ID:-iam1ke@proton.me}"
 ANISETTE_PORT="${ANISETTE_PORT:-6969}"
-SIDELOADER="${SIDELOADER:-$HOME/altserver/sideloader-cli}"
+SIDELOADER="${SIDELOADER:-}"
+if [ -z "$SIDELOADER" ] || [ ! -x "$SIDELOADER" ]; then
+    if [ -x "$HOME/altserver/sideloader-cli" ]; then
+        SIDELOADER="$HOME/altserver/sideloader-cli"
+    elif [ -x "/home/m1ke/Proyectos 2026/OS-Dev/Loader Master/src-tauri/bin/AltServer-x86_64" ]; then
+        SIDELOADER="/home/m1ke/Proyectos 2026/OS-Dev/Loader Master/src-tauri/bin/AltServer-x86_64"
+    fi
+fi
 IPA="${1:-build/XiaomiRemote-unsigned/XiaomiRemote-unsigned.ipa}"
 RETRIES="${RETRIES:-10}"
 
@@ -17,31 +24,38 @@ green() { printf '\033[32m%s\033[0m\n' "$1"; }
 red()   { printf '\033[31m%s\033[0m\n' "$1"; }
 info()  { printf '\033[36m%s\033[0m\n' "$1"; }
 
-[ -x "$SIDELOADER" ] || { red "No encuentro sideloader-cli en $SIDELOADER"; exit 1; }
+[ -x "$SIDELOADER" ] || { red "No encuentro sideloader o AltServer ejecutable en $SIDELOADER"; exit 1; }
 [ -f "$IPA" ]        || { red "No encuentro el IPA en $IPA"; exit 1; }
 IPA="$(realpath "$IPA")"
 
-# 1) Asegurar anisette en marcha (podman/docker)
+# 1) Asegurar anisette en marcha (podman/docker o remoto)
 CONTAINER_TOOL=$(command -v podman 2>/dev/null || command -v docker 2>/dev/null || echo "")
-if ! curl -s "http://127.0.0.1:${ANISETTE_PORT}/v3/client_info" >/dev/null 2>&1; then
+if curl -s "http://127.0.0.1:${ANISETTE_PORT}/v3/client_info" >/dev/null 2>&1; then
+    info "Usando servidor anisette local en puerto ${ANISETTE_PORT}..."
+    export SIDELOADER_ANISETTE_SERVER="http://127.0.0.1:${ANISETTE_PORT}"
+    export ALTSERVER_ANISETTE_SERVER="http://127.0.0.1:${ANISETTE_PORT}"
+elif [ -n "$CONTAINER_TOOL" ]; then
     info "Levantando servidor anisette..."
-    if [ -n "$CONTAINER_TOOL" ]; then
-        NAME=$($CONTAINER_TOOL ps -a --format '{{.Names}}' | grep -i anisette | head -1)
-        if [ -n "$NAME" ]; then
-            $CONTAINER_TOOL start "$NAME" >/dev/null
-        else
-            $CONTAINER_TOOL run -d --name anisette -p ${ANISETTE_PORT}:6969 \
-                dadoum/anisette-v3-server >/dev/null
-        fi
+    NAME=$($CONTAINER_TOOL ps -a --format '{{.Names}}' | grep -i anisette | head -1)
+    if [ -n "$NAME" ]; then
+        $CONTAINER_TOOL start "$NAME" >/dev/null
+    else
+        $CONTAINER_TOOL run -d --name anisette -p ${ANISETTE_PORT}:6969 \
+            dadoum/anisette-v3-server >/dev/null
     fi
     info "Esperando a anisette..."
     for _ in $(seq 1 15); do
         curl -s "http://127.0.0.1:${ANISETTE_PORT}/v3/client_info" >/dev/null 2>&1 && break
         sleep 1
     done
+    export SIDELOADER_ANISETTE_SERVER="http://127.0.0.1:${ANISETTE_PORT}"
+    export ALTSERVER_ANISETTE_SERVER="http://127.0.0.1:${ANISETTE_PORT}"
+else
+    info "Servidor anisette local no detectado. Usando servidor remoto (https://ani.sidestore.io)..."
+    export SIDELOADER_ANISETTE_SERVER="https://ani.sidestore.io"
+    export ALTSERVER_ANISETTE_SERVER="https://ani.sidestore.io"
+    export ANISETTE_SERVER="https://ani.sidestore.io"
 fi
-export SIDELOADER_ANISETTE_SERVER="http://127.0.0.1:${ANISETTE_PORT}"
-export ALTSERVER_ANISETTE_SERVER="http://127.0.0.1:${ANISETTE_PORT}"
 
 # 2) Detectar iPhone
 UDID=$(idevice_id -l 2>/dev/null | head -1)
@@ -103,7 +117,7 @@ for i in $(seq 1 "$RETRIES"); do
         "$SIDELOADER" -u "$UDID" -a "$APPLE_ID" "$IPA" 2>&1 | tee "$OUT_LOG"
     fi
     
-    if ! grep -q -E "(Could not install|Error:|-22406|Exception:)" "$OUT_LOG" && grep -q -E "(Finished!|Installed)" "$OUT_LOG"; then
+    if ! grep -q -E "(Could not install|Error:|-22406|Exception:)" "$OUT_LOG" && grep -q -iE "(Finished!|Installation Succeeded|successfully installed)" "$OUT_LOG"; then
         green "¡Instalado con éxito! Confía en el perfil en Ajustes › General › VPN y gestión de dispositivos."
         rm -f "$OUT_LOG"
         exit 0

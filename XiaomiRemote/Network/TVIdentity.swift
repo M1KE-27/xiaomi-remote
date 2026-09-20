@@ -16,10 +16,10 @@ enum TVIdentity {
               let first = arr.first,
               let raw = first[kSecImportItemIdentity as String]
         else { return nil }
-        guard let identity = raw as? SecIdentity else {
+        guard CFGetTypeID(raw as CFTypeRef) == SecIdentityGetTypeID() else {
             return nil
         }
-        return identity
+        return ((raw as CFTypeRef) as! SecIdentity)
     }
 
     static func certificate(of identity: SecIdentity) -> SecCertificate? {
