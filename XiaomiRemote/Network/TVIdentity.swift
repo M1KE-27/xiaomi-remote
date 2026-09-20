@@ -5,21 +5,45 @@ import Security
 /// to extract RSA public-key parts needed by the Android TV pairing handshake.
 enum TVIdentity {
     static let passphrase = "xiaomiremote"
+    private static var cachedIdentity: SecIdentity?
 
     static func load() -> SecIdentity? {
+        if let cached = cachedIdentity {
+            return cached
+        }
+
         guard let url = Bundle.main.url(forResource: "tv_identity", withExtension: "p12"),
               let data = try? Data(contentsOf: url) else { return nil }
         let options: [String: Any] = [kSecImportExportPassphrase as String: passphrase]
         var items: CFArray?
-        guard SecPKCS12Import(data as CFData, options as CFDictionary, &items) == errSecSuccess,
-              let arr = items as? [[String: Any]],
-              let first = arr.first,
-              let raw = first[kSecImportItemIdentity as String]
-        else { return nil }
-        guard CFGetTypeID(raw as CFTypeRef) == SecIdentityGetTypeID() else {
-            return nil
+        let status = SecPKCS12Import(data as CFData, options as CFDictionary, &items)
+
+        if status == errSecSuccess,
+           let arr = items as? [[String: Any]],
+           let first = arr.first,
+           let raw = first[kSecImportItemIdentity as String],
+           CFGetTypeID(raw as CFTypeRef) == SecIdentityGetTypeID() {
+            let identity = ((raw as CFTypeRef) as! SecIdentity)
+            cachedIdentity = identity
+            return identity
         }
-        return ((raw as CFTypeRef) as! SecIdentity)
+
+        // Si ya fue importado anteriormente en el Keychain (errSecDuplicateItem)
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassIdentity,
+            kSecReturnRef as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne
+        ]
+        var item: CFTypeRef?
+        if SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
+           let raw = item,
+           CFGetTypeID(raw) == SecIdentityGetTypeID() {
+            let identity = ((raw as CFTypeRef) as! SecIdentity)
+            cachedIdentity = identity
+            return identity
+        }
+
+        return nil
     }
 
     static func certificate(of identity: SecIdentity) -> SecCertificate? {

@@ -201,6 +201,21 @@ public struct DevicesView: View {
                     }
                     .buttonStyle(PressedScaleButtonStyle())
 
+                    Button(action: {
+                        appState.startPairing(device: device)
+                    }) {
+                        Text("Vincular")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(Color.white.opacity(0.12))
+                            )
+                    }
+                    .buttonStyle(PressedScaleButtonStyle())
+
                     Spacer()
 
                     Button("Olvidar") {
@@ -234,7 +249,7 @@ public struct DevicesView: View {
                 Image(systemName: "network")
                     .foregroundColor(.gray)
 
-                TextField("Ej: 192.168.1.100", text: $appState.manualIPInput)
+                TextField("Ej: 192.168.3.17", text: $appState.manualIPInput)
                     .keyboardType(.decimalPad)
                     .foregroundColor(.white)
                     .autocorrectionDisabled()
@@ -272,49 +287,136 @@ public struct PairingSheetView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 20) {
-                Image(systemName: "tv.badge.wifi")
-                    .font(.system(size: 48))
-                    .foregroundColor(Color(red: 0.0, green: 0.48, blue: 1.0))
+                switch appState.pairingClient?.state ?? .idle {
+                case .idle, .connecting, .handshaking:
+                    Image(systemName: "tv.badge.wifi")
+                        .font(.system(size: 54))
+                        .foregroundColor(Color(red: 0.0, green: 0.48, blue: 1.0))
 
-                Text("Vinculación con Smart TV")
-                    .font(.system(size: 20, weight: .bold))
+                    Text("Conectando con Smart TV")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.white)
+
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .scaleEffect(1.2)
+                        .padding(.vertical, 8)
+
+                    Text("Solicitando código de vinculación al televisor...\nAsegúrate de que la TV esté encendida.")
+                        .font(.system(size: 13))
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 16)
+
+                case .awaitingCode:
+                    Image(systemName: "lock.shield")
+                        .font(.system(size: 54))
+                        .foregroundColor(Color(red: 0.20, green: 0.78, blue: 0.35))
+
+                    Text("Código en Pantalla del TV")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.white)
+
+                    Text("Introduce el código de 6 caracteres que aparece ahora en la pantalla de tu Xiaomi TV:")
+                        .font(.system(size: 13))
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 16)
+
+                    TextField("Ej: 4A2F8B", text: $appState.pairingCode)
+                        .font(.system(size: 28, weight: .bold, design: .monospaced))
+                        .multilineTextAlignment(.center)
+                        .keyboardType(.asciiCapable)
+                        .autocapitalization(.allCharacters)
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(Color.white.opacity(0.08))
+                        )
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 20)
+
+                    Button("Confirmar y Vincular") {
+                        appState.submitPairingCode()
+                    }
+                    .font(.system(size: 15, weight: .bold))
                     .foregroundColor(.white)
-
-                Text("Introduce el código de seguridad que aparece en la pantalla del televisor:")
-                    .font(.system(size: 13))
-                    .foregroundColor(.gray)
-                    .multilineTextAlignment(.center)
-
-                TextField("Código de 6 dígitos", text: $appState.pairingCode)
-                    .font(.system(size: 24, weight: .bold, design: .monospaced))
-                    .multilineTextAlignment(.center)
-                    .keyboardType(.asciiCapable)
-                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
                     .background(
                         RoundedRectangle(cornerRadius: 14)
-                            .fill(Color.white.opacity(0.08))
+                            .fill(Color(red: 0.0, green: 0.48, blue: 1.0))
                     )
-                    .foregroundColor(.white)
                     .padding(.horizontal, 20)
 
-                Button("Confirmar Código") {
-                    appState.submitPairingCode()
-                }
-                .font(.system(size: 15, weight: .bold))
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 48)
-                .background(
-                    RoundedRectangle(cornerRadius: 14)
-                        .fill(Color(red: 0.0, green: 0.48, blue: 1.0))
-                )
-                .padding(.horizontal, 20)
+                case .verifying:
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                        .font(.system(size: 54))
+                        .foregroundColor(.cyan)
 
-                Button("Cancelar") {
+                    Text("Verificando Código")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.white)
+
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .scaleEffect(1.2)
+                        .padding(.vertical, 8)
+
+                    Text("Comprobando clave de seguridad con el televisor...")
+                        .font(.system(size: 13))
+                        .foregroundColor(.gray)
+
+                case .paired:
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 54))
+                        .foregroundColor(Color(red: 0.20, green: 0.78, blue: 0.35))
+
+                    Text("¡Vinculado con Éxito!")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.white)
+
+                    Text("El televisor ha memorizado el dispositivo.")
+                        .font(.system(size: 13))
+                        .foregroundColor(.gray)
+
+                case .failed(let errorMsg):
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 54))
+                        .foregroundColor(.red)
+
+                    Text("Error de Vinculación")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.white)
+
+                    Text(errorMsg)
+                        .font(.system(size: 13))
+                        .foregroundColor(.red.opacity(0.85))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 16)
+
+                    if let dev = appState.connectedDevice {
+                        Button("Reintentar Vinculación") {
+                            appState.startPairing(device: dev)
+                        }
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(Color(red: 0.0, green: 0.48, blue: 1.0))
+                        )
+                        .padding(.horizontal, 20)
+                    }
+                }
+
+                Button("Cerrar") {
                     appState.cancelPairing()
                 }
                 .foregroundColor(.gray)
-                .font(.system(size: 14))
+                .font(.system(size: 14, weight: .medium))
+                .padding(.top, 8)
             }
             .padding(24)
         }

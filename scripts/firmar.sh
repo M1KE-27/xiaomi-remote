@@ -9,16 +9,18 @@ set -u
 
 APPLE_ID="${APPLE_ID:-iam1ke@proton.me}"
 ANISETTE_PORT="${ANISETTE_PORT:-6969}"
-SIDELOADER="${SIDELOADER:-}"
-if [ -z "$SIDELOADER" ] || [ ! -x "$SIDELOADER" ]; then
-    if [ -x "$HOME/altserver/sideloader-cli" ]; then
-        SIDELOADER="$HOME/altserver/sideloader-cli"
-    elif [ -x "/home/m1ke/Proyectos 2026/OS-Dev/Loader Master/src-tauri/bin/AltServer-x86_64" ]; then
-        SIDELOADER="/home/m1ke/Proyectos 2026/OS-Dev/Loader Master/src-tauri/bin/AltServer-x86_64"
-    fi
-fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$REPO_DIR"
+
+SIDELOADER="${SIDELOADER:-}"
+if [ -z "$SIDELOADER" ] || [ ! -x "$SIDELOADER" ]; then
+    if [ -x "/home/m1ke/Proyectos 2026/OS-Dev/Loader Master/src-tauri/bin/AltServer-x86_64" ]; then
+        SIDELOADER="/home/m1ke/Proyectos 2026/OS-Dev/Loader Master/src-tauri/bin/AltServer-x86_64"
+    elif [ -x "/home/m1ke/Proyectos 2026/Loader Master/src-tauri/bin/AltServer-x86_64" ]; then
+        SIDELOADER="/home/m1ke/Proyectos 2026/Loader Master/src-tauri/bin/AltServer-x86_64"
+    fi
+fi
 
 IPA="${1:-}"
 if [ -z "$IPA" ]; then
@@ -125,10 +127,18 @@ fi
 for i in $(seq 1 "$RETRIES"); do
     info "=== Intento $i/$RETRIES ==="
     : > "$OUT_LOG"
-    if [ -n "$CMD_PASS" ]; then
-        echo "" | "$SIDELOADER" -u "$UDID" -a "$APPLE_ID" $CMD_PASS "$IPA" 2>&1 | tee "$OUT_LOG"
+    if [ -t 0 ]; then
+        if [ -n "$CMD_PASS" ]; then
+            "$SIDELOADER" -u "$UDID" -a "$APPLE_ID" $CMD_PASS "$IPA" 2>&1 | tee "$OUT_LOG"
+        else
+            "$SIDELOADER" -u "$UDID" -a "$APPLE_ID" "$IPA" 2>&1 | tee "$OUT_LOG"
+        fi
     else
-        echo "" | "$SIDELOADER" -u "$UDID" -a "$APPLE_ID" "$IPA" 2>&1 | tee "$OUT_LOG"
+        if [ -n "$CMD_PASS" ]; then
+            echo "" | "$SIDELOADER" -u "$UDID" -a "$APPLE_ID" $CMD_PASS "$IPA" 2>&1 | tee "$OUT_LOG"
+        else
+            echo "" | "$SIDELOADER" -u "$UDID" -a "$APPLE_ID" "$IPA" 2>&1 | tee "$OUT_LOG"
+        fi
     fi
     
     if ! grep -q -E "(Could not install|Error:|-22406|Exception:)" "$OUT_LOG" && grep -q -iE "(Finished!|Installation Succeeded|successfully installed)" "$OUT_LOG"; then

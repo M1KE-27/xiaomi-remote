@@ -3,6 +3,9 @@ import Network
 import Security
 import CryptoKit
 import Combine
+import os
+
+private let logger = os.Logger(subsystem: "com.local.xiaomiremote", category: "PairingClient")
 
 /// Implements the Android TV Remote v2 ("polo") pairing handshake on port 6467.
 /// The TV shows a 6-hex-digit code; the user types it and we prove possession of
@@ -42,6 +45,7 @@ final class PairingClient: ObservableObject {
     // MARK: - Connection
 
     func start() {
+        logger.info("Iniciando emparejamiento con \(self.host):\(self.port)")
         state = .connecting
         handshakeStep = 0
         receiveBuffer.removeAll()
@@ -49,6 +53,7 @@ final class PairingClient: ObservableObject {
         guard let identity = TVIdentity.load(),
               let cert = TVIdentity.certificate(of: identity),
               let parts = TVIdentity.rsaPublicKeyParts(of: cert) else {
+            logger.error("No se pudo cargar el certificado de la app (tv_identity.p12)")
             state = .failed("No se pudo cargar el certificado de la app")
             return
         }
@@ -56,19 +61,28 @@ final class PairingClient: ObservableObject {
 
         let tlsOptions = NWProtocolTLS.Options()
         guard let secIdentity = sec_identity_create(identity) else {
+            logger.error("Error creando SecIdentity para TLS")
             state = .failed("Identidad TLS inválida")
             return
         }
         sec_protocol_options_set_local_identity(tlsOptions.securityProtocolOptions, secIdentity)
+        
+        // Android TV Netty server ONLY supports TLS 1.2!
         sec_protocol_options_set_min_tls_protocol_version(tlsOptions.securityProtocolOptions, .TLSv12)
+        sec_protocol_options_set_max_tls_protocol_version(tlsOptions.securityProtocolOptions, .TLSv12)
 
         sec_protocol_options_set_verify_block(
             tlsOptions.securityProtocolOptions,
             { [weak self] _, trust, complete in
                 let secTrust = sec_trust_copy_ref(trust).takeRetainedValue()
+                _ = SecTrustEvaluateWithError(secTrust, nil)
                 if let chain = SecTrustCopyCertificateChain(secTrust) as? [SecCertificate],
                    let leaf = chain.first,
                    let parts = TVIdentity.rsaPublicKeyParts(of: leaf) {
+                    Task { @MainActor in self?.serverKey = parts }
+                } else if SecTrustGetCertificateCount(secTrust) > 0,
+                          let leaf = SecTrustGetCertificateAtIndex(secTrust, 0),
+                          let parts = TVIdentity.rsaPublicKeyParts(of: leaf) {
                     Task { @MainActor in self?.serverKey = parts }
                 }
                 complete(true)  // TV uses a self-signed cert; trust is established via the code
@@ -97,6 +111,7 @@ final class PairingClient: ObservableObject {
     }
 
     func cancel() {
+        logger.info("Cancelando emparejamiento")
         connection?.cancel()
         connection = nil
         state = .idle
@@ -105,13 +120,14 @@ final class PairingClient: ObservableObject {
     private func handleStateChange(_ nwState: NWConnection.State) {
         switch nwState {
         case .ready:
+            logger.info("Conexión TLS 1.2 lista en puerto 6467. Iniciando handshake...")
             state = .handshaking
             send(PairingMessages.pairingRequest(clientName: "iPhone Remote"))
             receiveLoop()
         case .failed(let error):
+            logger.error("Fallo de conexión en emparejamiento: \(error.localizedDescription)")
             state = .failed(error.localizedDescription)
         case .cancelled:
-            // Don't clobber a terminal state (.paired / .failed) set just before cancel.
             switch state {
             case .paired, .failed: break
             default: state = .idle
@@ -151,6 +167,7 @@ final class PairingClient: ObservableObject {
     private func handleMessage(_ payload: Data) {
         // Top-level status field (2). Anything >= 400 is an error from the TV.
         if let status = payload.protobufVarintField(2), status >= 400 {
+            logger.error("TV reportó error en pairing: \(status)")
             state = .failed(status == 402 ? "Código incorrecto" : "Error del TV (\(status))")
             connection?.cancel()
             return
@@ -159,16 +176,21 @@ final class PairingClient: ObservableObject {
         switch state {
         case .handshaking:
             handshakeStep += 1
+            logger.info("Handshake step recibido: \(self.handshakeStep)")
             switch handshakeStep {
             case 1:  // got pairing_request_ack -> send options
+                logger.info("Enviando opciones de emparejamiento (hex, 6 dígitos)...")
                 send(PairingMessages.options())
             case 2:  // got options ack -> send configuration
+                logger.info("Enviando configuración de emparejamiento...")
                 send(PairingMessages.configuration())
             default: // got configuration_ack -> TV now shows the code
+                logger.info("¡Configuración aceptada por el TV! Esperando que el usuario introduzca el código mostrado en pantalla.")
                 state = .awaitingCode
             }
         case .verifying:
             // secret_ack received
+            logger.info("¡Código aceptado por el TV! Emparejamiento completado con éxito.")
             state = .paired
             connection?.cancel()
             onPaired?()
@@ -181,13 +203,19 @@ final class PairingClient: ObservableObject {
 
     /// Called from the UI with the code the TV shows. Computes and sends the secret.
     func submitCode(_ rawCode: String) {
-        let code = rawCode.trimmingCharacters(in: .whitespaces).lowercased()
-        guard state == .awaitingCode else { return }
+        let code = rawCode.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        logger.info("Procesando código de vinculación introducido por el usuario: \(code)")
+        guard state == .awaitingCode else {
+            logger.warning("submitCode llamado fuera del estado awaitingCode (estado actual: \(String(describing: self.state)))")
+            return
+        }
         guard let clientKey, let serverKey else {
+            logger.error("Faltan claves clientKey o serverKey para calcular el secreto")
             state = .failed("No se obtuvieron las claves del handshake")
             return
         }
         guard let codeBytes = Self.hexToBytes(code), codeBytes.count >= 2 else {
+            logger.error("Formato de código inválido (debe tener al menos 4 caracteres hexadecimales)")
             state = .failed("El código debe ser hexadecimal (ej: A1B2C3)")
             return
         }
@@ -201,10 +229,12 @@ final class PairingClient: ObservableObject {
         let digest = Data(hasher.finalize())
 
         guard digest.first == codeBytes.first else {
+            logger.error("Check byte del código no coincide con SHA256 calculado")
             state = .failed("Código incorrecto, vuelve a intentarlo")
             return
         }
 
+        logger.info("Check byte válido. Enviando secreto al TV...")
         state = .verifying
         send(PairingMessages.secret(digest))
     }

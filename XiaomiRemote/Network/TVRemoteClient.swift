@@ -1,6 +1,9 @@
 import Foundation
 import Network
 import Security
+import os
+
+private let logger = os.Logger(subsystem: "com.local.xiaomiremote", category: "TVRemoteClient")
 
 @MainActor
 class TVRemoteClient: ObservableObject {
@@ -31,10 +34,14 @@ class TVRemoteClient: ObservableObject {
         connection?.cancel()        // nunca dejamos dos conexiones vivas
         receiveBuffer.removeAll()
         state = .connecting
+        logger.info("Conectando a TV en \(self.host):\(self.port)...")
         let tlsOptions = NWProtocolTLS.Options()
 
         if let identity = TVIdentity.load(), let secIdentity = sec_identity_create(identity) {
             sec_protocol_options_set_local_identity(tlsOptions.securityProtocolOptions, secIdentity)
+            logger.info("Identidad de cliente TLS asignada exitosamente.")
+        } else {
+            logger.error("Advertencia: No se pudo cargar la identidad TLS para el puerto 6466.")
         }
 
         sec_protocol_options_set_verify_block(
@@ -43,7 +50,12 @@ class TVRemoteClient: ObservableObject {
             .global()
         )
 
+        // Android TV Netty server ONLY supports TLS 1.2!
         sec_protocol_options_set_min_tls_protocol_version(
+            tlsOptions.securityProtocolOptions,
+            .TLSv12
+        )
+        sec_protocol_options_set_max_tls_protocol_version(
             tlsOptions.securityProtocolOptions,
             .TLSv12
         )
@@ -75,40 +87,54 @@ class TVRemoteClient: ObservableObject {
         connection?.cancel()
         connection = nil
         state = .disconnected
+        logger.info("Desconectado manualmente.")
     }
 
     func sendKey(_ keyCode: Int, direction: KeyDirection = .short) {
-        guard state == .connected else { return }
+        guard state == .connected else {
+            logger.warning("Intento de envío de keycode \(keyCode) sin conexión activa")
+            return
+        }
         send(TVMessage.keyInject(keyCode: keyCode, direction: direction))
     }
 
     func launchApp(_ link: String) {
-        guard state == .connected else { return }
+        guard state == .connected else {
+            logger.warning("Intento de lanzamiento de app \(link) sin conexión activa")
+            return
+        }
         send(TVMessage.appLink(link))
     }
 
     private func handleStateChange(_ nwState: NWConnection.State) {
         switch nwState {
         case .ready:
+            logger.info("Conexión TLS 1.2 establecida con el televisor en puerto 6466!")
             state = .connected
             reconnectAttempts = 0
             // El handshake lo inicia el TV: nos manda remote_configure y
             // respondemos en processBuffer(). No enviamos nada proactivamente.
             receiveLoop()
-        case .failed:
-            scheduleReconnect()
+        case .failed(let error):
+            logger.error("Error en conexión con \(self.host): \(error.localizedDescription)")
+            scheduleReconnect(errorDescription: error.localizedDescription)
         case .cancelled:
-            if manualDisconnect { state = .disconnected }
-            else { scheduleReconnect() }
+            if manualDisconnect {
+                state = .disconnected
+            } else {
+                scheduleReconnect(errorDescription: "Conexión cancelada")
+            }
         default:
             break
         }
     }
 
     /// Reintenta la conexión con pequeño retardo cuando se cae sin querer.
-    private func scheduleReconnect() {
+    private func scheduleReconnect(errorDescription: String? = nil) {
         guard !manualDisconnect, reconnectAttempts < maxReconnects else {
-            state = .failed("Sin conexión con el TV")
+            let msg = errorDescription ?? "Sin conexión con el TV"
+            logger.error("Límite de reconexiones alcanzado: \(msg)")
+            state = .failed(msg)
             return
         }
         reconnectAttempts += 1

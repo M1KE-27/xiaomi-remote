@@ -60,11 +60,16 @@ final class AppState: ObservableObject {
         self.keepScreenAwake = UserDefaults.standard.object(forKey: "keepScreenAwake") as? Bool ?? false
         self.autoReconnect = UserDefaults.standard.object(forKey: "autoReconnect") as? Bool ?? true
         
-        let savedBrandRaw = UserDefaults.standard.string(forKey: "selectedBrand") ?? TVBrand.samsung.rawValue
-        self.selectedBrand = TVBrand(rawValue: savedBrandRaw) ?? .samsung
+        let savedBrandRaw = UserDefaults.standard.string(forKey: "selectedBrand") ?? TVBrand.xiaomi.rawValue
+        self.selectedBrand = TVBrand(rawValue: savedBrandRaw) ?? .xiaomi
         
-        let savedIP = UserDefaults.standard.string(forKey: "tvHost") ?? "192.168.1.42"
+        let savedIP = UserDefaults.standard.string(forKey: "tvHost") ?? "192.168.3.17"
         self.manualIPInput = savedIP
+
+        // Pre-cargar lista inicial de dispositivos
+        self.devices = discovery.devices.map {
+            TVDevice(id: $0.id, name: $0.name, host: $0.host, brand: self.selectedBrand)
+        }
 
         setupServiceBinding()
         setupDiscoveryBinding()
@@ -74,6 +79,10 @@ final class AppState: ObservableObject {
            let device = try? JSONDecoder().decode(TVDevice.self, from: savedDeviceData) {
             self.connectedDevice = device
             self.manualIPInput = device.host
+        } else {
+            // Dispositivo por defecto: Xiaomi Mi TV
+            let defaultDevice = TVDevice(id: "192.168.3.17", name: "Xiaomi Mi TV", host: "192.168.3.17", brand: .xiaomi)
+            self.connectedDevice = defaultDevice
         }
     }
 
@@ -89,6 +98,7 @@ final class AppState: ObservableObject {
                     if var current = self.connectedDevice {
                         current.lastConnectedDate = Date()
                         self.saveConnectedDevice(current)
+                        UserDefaults.standard.set(true, forKey: "paired_\(current.host)")
                     }
                 } else if case .failed(let err) = status {
                     self.lastError = err
@@ -120,20 +130,14 @@ final class AppState: ObservableObject {
 
     func connect(to device: TVDevice) {
         saveConnectedDevice(device)
-        let pairedKey = "paired_\(device.host)"
-        let isAlreadyPaired = UserDefaults.standard.bool(forKey: pairedKey)
-        
-        if isAlreadyPaired {
-            networkService.connect(to: device)
-        } else {
-            startPairing(device: device)
-        }
+        logger.info("Conectando a \(device.name) (\(device.host))...")
+        networkService.connect(to: device)
     }
 
     func connectManualIP() {
         let ip = manualIPInput.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !ip.isEmpty else { return }
-        let device = TVDevice(id: ip, name: "Smart TV (\(ip))", host: ip, brand: selectedBrand)
+        let device = TVDevice(id: ip, name: "Xiaomi TV (\(ip))", host: ip, brand: selectedBrand)
         connect(to: device)
     }
 
