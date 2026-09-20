@@ -17,7 +17,21 @@ if [ -z "$SIDELOADER" ] || [ ! -x "$SIDELOADER" ]; then
         SIDELOADER="/home/m1ke/Proyectos 2026/OS-Dev/Loader Master/src-tauri/bin/AltServer-x86_64"
     fi
 fi
-IPA="${1:-build/XiaomiRemote-unsigned/XiaomiRemote-unsigned.ipa}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+IPA="${1:-}"
+if [ -z "$IPA" ]; then
+    if [ -f "$REPO_DIR/build/XiaomiRemote-unsigned/XiaomiRemote-unsigned.ipa" ]; then
+        IPA="$REPO_DIR/build/XiaomiRemote-unsigned/XiaomiRemote-unsigned.ipa"
+    elif [ -f "build/XiaomiRemote-unsigned/XiaomiRemote-unsigned.ipa" ]; then
+        IPA="build/XiaomiRemote-unsigned/XiaomiRemote-unsigned.ipa"
+    else
+        IPA="$REPO_DIR/build/XiaomiRemote-unsigned/XiaomiRemote-unsigned.ipa"
+    fi
+elif [ ! -f "$IPA" ] && [ -f "$REPO_DIR/$IPA" ]; then
+    IPA="$REPO_DIR/$IPA"
+fi
 RETRIES="${RETRIES:-10}"
 
 green() { printf '\033[32m%s\033[0m\n' "$1"; }
@@ -92,7 +106,7 @@ for _ in range(ncmds):
 PY
 then
     PATCHED="$WORK/patched.ipa"
-    ( cd "$WORK" && zip -qr "$PATCHED" Payload )
+    ( cd "$WORK" && python3 -m zipfile -c "$PATCHED" Payload )
     IPA="$PATCHED"
     green "IPA parcheado listo."
 else
@@ -112,9 +126,9 @@ for i in $(seq 1 "$RETRIES"); do
     info "=== Intento $i/$RETRIES ==="
     : > "$OUT_LOG"
     if [ -n "$CMD_PASS" ]; then
-        "$SIDELOADER" -u "$UDID" -a "$APPLE_ID" $CMD_PASS "$IPA" 2>&1 | tee "$OUT_LOG"
+        echo "" | "$SIDELOADER" -u "$UDID" -a "$APPLE_ID" $CMD_PASS "$IPA" 2>&1 | tee "$OUT_LOG"
     else
-        "$SIDELOADER" -u "$UDID" -a "$APPLE_ID" "$IPA" 2>&1 | tee "$OUT_LOG"
+        echo "" | "$SIDELOADER" -u "$UDID" -a "$APPLE_ID" "$IPA" 2>&1 | tee "$OUT_LOG"
     fi
     
     if ! grep -q -E "(Could not install|Error:|-22406|Exception:)" "$OUT_LOG" && grep -q -iE "(Finished!|Installation Succeeded|successfully installed)" "$OUT_LOG"; then
